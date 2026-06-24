@@ -1,10 +1,6 @@
 {
   "version": 2,
-  "projects": [
-    {
-      "name": "frontend",
-      "framework": "nextjs",
-      "rootDirectory": "frontend"
-    }
-  ]
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next"
 }
