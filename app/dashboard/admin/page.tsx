@@ -6,7 +6,7 @@ import axios from 'axios';
 import styles from './admin.module.css';
 
 // ============================================
-// TYPES
+// INTERFACES / TYPES
 // ============================================
 interface Vendor {
     id: string;
@@ -19,6 +19,20 @@ interface Vendor {
     cnicFront?: string;
     cnicBack?: string;
     shopAddress?: string;
+}
+
+interface Rider {
+    id: string;
+    name: string;
+    email: string;
+    status: string;
+}
+
+interface Customer {
+    id: string;
+    name: string;
+    email: string;
+    status: string;
 }
 
 interface AdminEmployee {
@@ -53,25 +67,6 @@ interface CommissionType {
     description: string;
 }
 
-interface Customer {
-    id: string;
-    name: string;
-    email: string;
-    orders: number;
-    joined: string;
-}
-
-interface Rider {
-    id: string;
-    name: string;
-    email: string;
-    deliveries: number;
-    status: string;
-}
-
-// ============================================
-// MAIN COMPONENT
-// ============================================
 export default function AdminDashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -80,67 +75,18 @@ export default function AdminDashboardPage() {
     const [showVendorDetail, setShowVendorDetail] = useState(false);
 
     // ============================================
-    // VENDORS STATE - Fetch from API
+    // STATES - Backend se data aayega
     // ============================================
     const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [riders, setRiders] = useState<Rider[]>([]);
+    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [adminEmployees, setAdminEmployees] = useState<AdminEmployee[]>([]);
+    const [commissionTypes, setCommissionTypes] = useState<CommissionType[]>([]);
+    const [coupons, setCoupons] = useState<Coupon[]>([]);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
 
     // ============================================
-    // ADMIN EMPLOYEES STATE
-    // ============================================
-    const [adminEmployees] = useState<AdminEmployee[]>([
-        { id: '1', name: 'Ahmed Hussain', email: 'ahmed@platform.com', role: 'Vendor Manager' },
-        { id: '2', name: 'Sadia Khan', email: 'sadia@platform.com', role: 'Product Moderator' },
-        { id: '3', name: 'Raza Ali', email: 'raza@platform.com', role: 'Order Manager' },
-        { id: '4', name: 'Nida Shah', email: 'nida@platform.com', role: 'Finance Manager' },
-        { id: '5', name: 'Omar Farooq', email: 'omar@platform.com', role: 'Support Manager' },
-    ]);
-
-    // ============================================
-    // COMMISSION TYPES STATE
-    // ============================================
-    const [commissionTypes] = useState<CommissionType[]>([
-        { id: '1', name: 'Percentage Commission', value: '1%', type: 'percentage', description: '1% of every order' },
-        { id: '2', name: 'Fixed Commission', value: 'PKR 10', type: 'fixed', description: 'PKR 10 per order' },
-        { id: '3', name: 'Per Product Commission', value: '2%', type: 'percentage', description: '2% per product category' },
-        { id: '4', name: 'Per Vendor Commission', value: '0.5%', type: 'percentage', description: '0.5% per vendor' },
-        { id: '5', name: 'Tiered Commission', value: '1% → 0.5%', type: 'percentage', description: 'Based on sales volume' },
-    ]);
-
-    // ============================================
-    // COUPONS STATE
-    // ============================================
-    const [coupons] = useState<Coupon[]>([
-        { id: '1', code: 'WELCOME10', discount: '10%', type: 'percentage', expiry: '2024-12-31', usage: 45 },
-        { id: '2', code: 'FLAT50', discount: 'PKR 50', type: 'fixed', expiry: '2024-06-30', usage: 23 },
-        { id: '3', code: 'SUMMER20', discount: '20%', type: 'percentage', expiry: '2024-08-31', usage: 12 },
-    ]);
-
-    // ============================================
-    // ANNOUNCEMENTS STATE
-    // ============================================
-    const [announcements] = useState<Announcement[]>([
-        { id: '1', title: '📢 Welcome to DigitalRawalpindi!', content: 'We are excited to launch our platform. Start selling today!', date: '2024-01-01', audience: 'all' },
-        { id: '2', title: '🏪 New Vendor Onboarding', content: 'We are onboarding new vendors this week. Check your dashboard.', date: '2024-01-10', audience: 'vendors' },
-        { id: '3', title: '🛍️ Customer Appreciation', content: 'Use code THANKYOU for 10% off on first order.', date: '2024-01-15', audience: 'customers' },
-    ]);
-
-    // ============================================
-    // CUSTOMERS & RIDERS STATE
-    // ============================================
-    const [customers] = useState<Customer[]>([
-        { id: '1', name: 'Hamza Ali', email: 'hamza@email.com', orders: 12, joined: '2024-01-01' },
-        { id: '2', name: 'Ayesha Khan', email: 'ayesha@email.com', orders: 8, joined: '2024-01-05' },
-        { id: '3', name: 'Bilal Ahmed', email: 'bilal@email.com', orders: 5, joined: '2024-01-10' },
-    ]);
-
-    const [riders] = useState<Rider[]>([
-        { id: '1', name: 'Zain Malik', email: 'zain@rider.com', deliveries: 45, status: 'Active' },
-        { id: '2', name: 'Hira Shah', email: 'hira@rider.com', deliveries: 32, status: 'Active' },
-        { id: '3', name: 'Faisal Ali', email: 'faisal@rider.com', deliveries: 18, status: 'Inactive' },
-    ]);
-
-    // ============================================
-    // MODAL STATES
+    // MODALS STATE
     // ============================================
     const [showAddCoupon, setShowAddCoupon] = useState(false);
     const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
@@ -148,14 +94,19 @@ export default function AdminDashboardPage() {
     const [showAddCommission, setShowAddCommission] = useState(false);
 
     // ============================================
-    // API BASE URL
+    // FORM STATES
     // ============================================
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const [employeeForm, setEmployeeForm] = useState({ name: '', email: '', role: 'Vendor Manager' });
+    const [couponForm, setCouponForm] = useState({ code: '', type: 'percentage' as const, discount: '', expiry: '' });
+    const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', audience: 'all' as const });
+    const [commissionForm, setCommissionForm] = useState({ name: '', type: 'percentage' as const, value: '', description: '' });
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
 
     // ============================================
-    // FETCH VENDORS - UPDATED
+    // FETCH DATA FROM BACKEND
     // ============================================
-    const fetchVendors = useCallback(async () => {
+    const loadAllDashboardData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -163,697 +114,544 @@ export default function AdminDashboardPage() {
                 return;
             }
 
-            console.log('📋 Fetching vendors from API...');
-            const response = await axios.get(`${API_URL}/api/auth/vendors`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const headers = { Authorization: `Bearer ${token}` };
 
-            if (response.data.success) {
-                console.log(`✅ Found ${response.data.vendors.length} vendors`);
-                setVendors(response.data.vendors);
-            } else {
-                console.error('❌ Failed to fetch vendors:', response.data.message);
-            }
-        } catch (error: any) {
-            console.error('❌ Error fetching vendors:', error.response?.data || error.message);
-            if (error.response?.status === 401) {
-                router.push('/auth/login');
-            }
+            // 1. Vendors - GET /api/auth/vendors
+            const resVendors = await axios.get(`${API_URL}/api/auth/vendors`, { headers });
+            if (resVendors?.data?.success) setVendors(resVendors.data.vendors);
+
+            // 2. Riders - GET /api/auth/riders
+            const resRiders = await axios.get(`${API_URL}/api/auth/riders`, { headers });
+            if (resRiders?.data?.success) setRiders(resRiders.data.riders);
+
+            // 3. Customers - GET /api/auth/customers
+            const resCustomers = await axios.get(`${API_URL}/api/auth/customers`, { headers });
+            if (resCustomers?.data?.success) setCustomers(resCustomers.data.customers);
+
+            // 4. Employees - GET /api/auth/employees
+            const resEmployees = await axios.get(`${API_URL}/api/auth/employees`, { headers });
+            if (resEmployees?.data?.success) setAdminEmployees(resEmployees.data.employees);
+
+            // 5. Commissions - GET /api/auth/commissions
+            const resCommissions = await axios.get(`${API_URL}/api/auth/commissions`, { headers });
+            if (resCommissions?.data?.success) setCommissionTypes(resCommissions.data.commissions);
+
+            // 6. Coupons - GET /api/auth/coupons
+            const resCoupons = await axios.get(`${API_URL}/api/auth/coupons`, { headers });
+            if (resCoupons?.data?.success) setCoupons(resCoupons.data.coupons);
+
+            // 7. Announcements - GET /api/auth/announcements
+            const resAnnouncements = await axios.get(`${API_URL}/api/auth/announcements`, { headers });
+            if (resAnnouncements?.data?.success) setAnnouncements(resAnnouncements.data.announcements);
+
+        } catch (error) {
+            console.error("Error loading dashboard data:", error);
         } finally {
             setLoading(false);
         }
     }, [API_URL, router]);
 
-    // ============================================
-    // UPDATE VENDOR STATUS - UPDATED
-    // ============================================
-    const updateVendorStatus = useCallback(async (vendorId: string, status: 'approved' | 'rejected') => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                router.push('/auth/login');
-                return;
-            }
-
-            console.log(`📝 Updating vendor ${vendorId} to ${status}...`);
-            const response = await axios.put(
-                `${API_URL}/api/auth/vendor/${vendorId}/status`,
-                { status },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                alert(`✅ Vendor ${status} successfully!`);
-                setShowVendorDetail(false);
-                // Refresh vendors list
-                await fetchVendors();
-            } else {
-                alert(`❌ Failed: ${response.data.message}`);
-            }
-        } catch (error: any) {
-            console.error('❌ Error updating vendor status:', error.response?.data || error.message);
-            alert(`❌ Failed: ${error.response?.data?.message || error.message}`);
-        }
-    }, [API_URL, router, fetchVendors]);
-
-    // ============================================
-    // USE EFFECT - Check Auth and Load Data
-    // ============================================
     useEffect(() => {
         const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
-
         if (!token) {
             router.push('/auth/login');
             setLoading(false);
             return;
         }
+        loadAllDashboardData();
+    }, [router, loadAllDashboardData]);
 
+    // ============================================
+    // VENDOR APPROVAL
+    // ============================================
+    const updateVendorStatus = useCallback(async (vendorId: string, status: 'approved' | 'rejected') => {
         try {
-            const parsedUser = JSON.parse(userData || '{}');
-            if (parsedUser.role !== 'admin') {
-                router.push('/auth/login');
-                setLoading(false);
-                return;
+            const token = localStorage.getItem('token');
+            const response = await axios.put(
+                `${API_URL}/api/auth/vendor/${vendorId}/status`,
+                { status },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data.success) {
+                alert(`✅ Vendor ${status} successfully!`);
+                setShowVendorDetail(false);
+                loadAllDashboardData();
             }
-            // Fetch vendors from API
-            fetchVendors();
-        } catch {
-            router.push('/auth/login');
+        } catch (error: any) {
+            alert(`❌ Error updating vendor status`);
         }
-    }, [router, fetchVendors]);
+    }, [API_URL, loadAllDashboardData]);
 
     // ============================================
-    // HANDLERS
+    // EMPLOYEE CRUD - POST /api/auth/employee
     // ============================================
-    const handleLogout = useCallback(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        router.push('/auth/login');
-    }, [router]);
-
-    const handleTabChange = useCallback((tab: string) => {
-        setActiveTab(tab);
-    }, []);
-
-    const handleViewVendorDetail = useCallback((vendor: Vendor) => {
-        setSelectedVendor(vendor);
-        setShowVendorDetail(true);
-    }, []);
-
-    const handleAddCoupon = useCallback((e: React.FormEvent) => {
+    const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert('✅ Coupon created successfully!');
-        setShowAddCoupon(false);
-    }, []);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/api/auth/employee`,
+                employeeForm,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data.success) {
+                alert('✅ Employee added successfully!');
+                setShowAddEmployee(false);
+                setEmployeeForm({ name: '', email: '', role: 'Vendor Manager' });
+                loadAllDashboardData();
+            }
+        } catch (error) {
+            alert('❌ Failed to add employee');
+        }
+    };
 
-    const handleAddAnnouncement = useCallback((e: React.FormEvent) => {
-        e.preventDefault();
-        alert('✅ Announcement sent successfully!');
-        setShowAddAnnouncement(false);
-    }, []);
-
-    const handleAddEmployee = useCallback((e: React.FormEvent) => {
-        e.preventDefault();
-        alert('✅ Admin employee added successfully!');
-        setShowAddEmployee(false);
-    }, []);
-
-    const handleDeleteEmployee = useCallback((employeeId: string) => {
-        if (confirm('Are you sure you want to remove this employee?')) {
+    const handleDeleteEmployee = async (id: string) => {
+        if (!confirm('Are you sure you want to remove this employee?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_URL}/api/auth/employee/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             alert('✅ Employee removed successfully!');
+            loadAllDashboardData();
+        } catch (error) {
+            alert('❌ Failed to remove employee');
         }
-    }, []);
+    };
 
-    const handleAddCommission = useCallback((e: React.FormEvent) => {
+    // ============================================
+    // COUPON CRUD - POST /api/auth/coupon
+    // ============================================
+    const handleAddCouponSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        alert('✅ Commission type added successfully!');
-        setShowAddCommission(false);
-    }, []);
-
-    const handleDeleteCoupon = useCallback((couponId: string) => {
-        if (confirm('Are you sure you want to delete this coupon?')) {
-            alert('✅ Coupon deleted successfully!');
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/api/auth/coupon`,
+                couponForm,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data.success) {
+                alert('✅ Coupon created successfully!');
+                setShowAddCoupon(false);
+                setCouponForm({ code: '', type: 'percentage', discount: '', expiry: '' });
+                loadAllDashboardData();
+            }
+        } catch (error) {
+            alert('❌ Failed to create coupon');
         }
-    }, []);
+    };
+
+    const handleDeleteCoupon = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this coupon?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_URL}/api/auth/coupon/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('✅ Coupon deleted successfully!');
+            loadAllDashboardData();
+        } catch (error) {
+            alert('❌ Failed to delete coupon');
+        }
+    };
 
     // ============================================
-    // MODAL RENDER FUNCTIONS
+    // COMMISSION CRUD - POST /api/auth/commission
     // ============================================
-    const renderAddCouponModal = useCallback(() => {
-        if (!showAddCoupon) return null;
-        return (
-            <div className={styles.modalOverlay} onClick={() => setShowAddCoupon(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalHeader}>
-                        <h3 className={styles.modalTitle}>Create Coupon</h3>
-                        <button className={styles.modalClose} onClick={() => setShowAddCoupon(false)}>×</button>
-                    </div>
-                    <form onSubmit={handleAddCoupon}>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Coupon Code</label>
-                            <input type="text" className={styles.formInput} placeholder="e.g., WELCOME10" required />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Discount Type</label>
-                            <select className={styles.formSelect} title="Select discount type">
-                                <option>Percentage</option>
-                                <option>Fixed</option>
-                            </select>
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Discount Amount</label>
-                            <input type="text" className={styles.formInput} placeholder="e.g., 10% or PKR 50" required />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Expiry Date</label>
-                            <input type="date" className={styles.formInput} required />
-                        </div>
-                        <button type="submit" className={styles.primaryBtn}>Create Coupon</button>
-                    </form>
-                </div>
-            </div>
-        );
-    }, [showAddCoupon, handleAddCoupon]);
+    const handleAddCommissionSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/api/auth/commission`,
+                commissionForm,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data.success) {
+                alert('✅ Commission type added successfully!');
+                setShowAddCommission(false);
+                setCommissionForm({ name: '', type: 'percentage', value: '', description: '' });
+                loadAllDashboardData();
+            }
+        } catch (error) {
+            alert('❌ Failed to add commission type');
+        }
+    };
 
-    const renderAddAnnouncementModal = useCallback(() => {
-        if (!showAddAnnouncement) return null;
-        return (
-            <div className={styles.modalOverlay} onClick={() => setShowAddAnnouncement(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalHeader}>
-                        <h3 className={styles.modalTitle}>Send Announcement</h3>
-                        <button className={styles.modalClose} onClick={() => setShowAddAnnouncement(false)}>×</button>
-                    </div>
-                    <form onSubmit={handleAddAnnouncement}>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Announcement Title</label>
-                            <input type="text" className={styles.formInput} placeholder="Enter title" required />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Content</label>
-                            <textarea className={styles.formTextarea} rows={4} placeholder="Write your announcement..." required></textarea>
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Audience</label>
-                            <select className={styles.formSelect} title="Select audience">
-                                <option>All Users</option>
-                                <option>Vendors Only</option>
-                                <option>Customers Only</option>
-                                <option>Riders Only</option>
-                            </select>
-                        </div>
-                        <button type="submit" className={styles.successBtn}>Send Announcement</button>
-                    </form>
-                </div>
-            </div>
-        );
-    }, [showAddAnnouncement, handleAddAnnouncement]);
-
-    const renderAddEmployeeModal = useCallback(() => {
-        if (!showAddEmployee) return null;
-        return (
-            <div className={styles.modalOverlay} onClick={() => setShowAddEmployee(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalHeader}>
-                        <h3 className={styles.modalTitle}>Add Admin Employee</h3>
-                        <button className={styles.modalClose} onClick={() => setShowAddEmployee(false)}>×</button>
-                    </div>
-                    <form onSubmit={handleAddEmployee}>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Full Name</label>
-                            <input type="text" className={styles.formInput} placeholder="Enter full name" required />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Email</label>
-                            <input type="email" className={styles.formInput} placeholder="Enter email" required />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Role</label>
-                            <select className={styles.formSelect} title="Select role">
-                                <option>Vendor Manager</option>
-                                <option>Product Moderator</option>
-                                <option>Order Manager</option>
-                                <option>Finance Manager</option>
-                                <option>Support Manager</option>
-                            </select>
-                        </div>
-                        <button type="submit" className={styles.primaryBtn}>Add Employee</button>
-                    </form>
-                </div>
-            </div>
-        );
-    }, [showAddEmployee, handleAddEmployee]);
-
-    const renderAddCommissionModal = useCallback(() => {
-        if (!showAddCommission) return null;
-        return (
-            <div className={styles.modalOverlay} onClick={() => setShowAddCommission(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalHeader}>
-                        <h3 className={styles.modalTitle}>Add Commission Type</h3>
-                        <button className={styles.modalClose} onClick={() => setShowAddCommission(false)}>×</button>
-                    </div>
-                    <form onSubmit={handleAddCommission}>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Commission Name</label>
-                            <input type="text" className={styles.formInput} placeholder="e.g., Custom Commission" required />
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Commission Type</label>
-                            <select className={styles.formSelect} title="Select commission type">
-                                <option>Percentage</option>
-                                <option>Fixed</option>
-                            </select>
-                        </div>
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Commission Value</label>
-                            <input type="text" className={styles.formInput} placeholder="e.g., 2% or PKR 20" required />
-                        </div>
-                        <button type="submit" className={styles.primaryBtn}>Add Commission</button>
-                    </form>
-                </div>
-            </div>
-        );
-    }, [showAddCommission, handleAddCommission]);
-
-    const renderVendorDetailModal = useCallback(() => {
-        if (!showVendorDetail || !selectedVendor) return null;
-
-        const isPending = selectedVendor.status === 'pending';
-
-        return (
-            <div className={styles.modalOverlay} onClick={() => setShowVendorDetail(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-                    <div className={styles.modalHeader}>
-                        <h3 className={styles.modalTitle}>📋 Vendor Details</h3>
-                        <button className={styles.modalClose} onClick={() => setShowVendorDetail(false)}>×</button>
-                    </div>
-
-                    <div className={styles.detailGrid}>
-                        <div>
-                            <label className={styles.detailLabel}>Shop Name</label>
-                            <p className={styles.detailValue}>{selectedVendor.shopName}</p>
-                        </div>
-                        <div>
-                            <label className={styles.detailLabel}>Owner</label>
-                            <p className={styles.detailValue}>{selectedVendor.ownerName}</p>
-                        </div>
-                        <div>
-                            <label className={styles.detailLabel}>Email</label>
-                            <p className={styles.detailValue}>{selectedVendor.email}</p>
-                        </div>
-                        <div>
-                            <label className={styles.detailLabel}>Phone</label>
-                            <p className={styles.detailValue}>{selectedVendor.phone}</p>
-                        </div>
-                        <div className={styles.detailFull}>
-                            <label className={styles.detailLabel}>Shop Address</label>
-                            <p className={styles.detailValue}>{selectedVendor.shopAddress}</p>
-                        </div>
-                        <div className={styles.detailFull}>
-                            <label className={styles.detailLabel}>Registered On</label>
-                            <p className={styles.detailValue}>{selectedVendor.date}</p>
-                        </div>
-                    </div>
-
-                    <div className={styles.cnicSection}>
-                        <h4>📄 CNIC Documents</h4>
-                        <div className={styles.cnicContainer}>
-                            <div>
-                                <label className={styles.detailLabel}>CNIC Front</label>
-                                <div className={styles.cnicBox}>
-                                    {selectedVendor.cnicFront ? (
-                                        <img
-                                            src={`${API_URL}/${selectedVendor.cnicFront}`}
-                                            alt="CNIC Front"
-                                            className={styles.cnicImage}
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/placeholder-image.png';
-                                            }}
-                                        />
-                                    ) : (
-                                        <span className={styles.cnicEmpty}>No image</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <label className={styles.detailLabel}>CNIC Back</label>
-                                <div className={styles.cnicBox}>
-                                    {selectedVendor.cnicBack ? (
-                                        <img
-                                            src={`${API_URL}/${selectedVendor.cnicBack}`}
-                                            alt="CNIC Back"
-                                            className={styles.cnicImage}
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = '/placeholder-image.png';
-                                            }}
-                                        />
-                                    ) : (
-                                        <span className={styles.cnicEmpty}>No image</span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {isPending && (
-                        <div className={styles.modalActions}>
-                            <button
-                                className={styles.successBtn}
-                                onClick={() => updateVendorStatus(selectedVendor.id, 'approved')}
-                            >
-                                ✅ Approve Vendor
-                            </button>
-                            <button
-                                className={styles.dangerBtn}
-                                onClick={() => updateVendorStatus(selectedVendor.id, 'rejected')}
-                            >
-                                ❌ Reject Vendor
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }, [showVendorDetail, selectedVendor, updateVendorStatus, API_URL]);
+    const handleDeleteCommission = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this commission type?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_URL}/api/auth/commission/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('✅ Commission type deleted successfully!');
+            loadAllDashboardData();
+        } catch (error) {
+            alert('❌ Failed to delete commission type');
+        }
+    };
 
     // ============================================
-    // RENDER FUNCTIONS
+    // ANNOUNCEMENT CRUD - POST /api/auth/announcement
     // ============================================
-    const renderVendors = useCallback(() => (
-        <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>🏪 Vendor Management</h2>
-            <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Shop Name</th>
-                            <th>Owner</th>
-                            <th>Email</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {vendors.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} style={{ textAlign: 'center', padding: '20px', color: '#6c757d' }}>
-                                    No vendors registered yet.
-                                </td>
-                            </tr>
-                        ) : (
-                            vendors.map((vendor) => (
-                                <tr key={vendor.id}>
-                                    <td>{vendor.shopName}</td>
-                                    <td>{vendor.ownerName}</td>
-                                    <td>{vendor.email}</td>
-                                    <td>{vendor.date}</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${vendor.status === 'approved' ? styles.statusApproved :
-                                                vendor.status === 'rejected' ? styles.statusRejected :
-                                                styles.statusPending
-                                            }`}>
-                                            {vendor.status.charAt(0).toUpperCase() + vendor.status.slice(1)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <button
-                                            className={styles.primaryBtn}
-                                            onClick={() => handleViewVendorDetail(vendor)}
-                                        >
-                                            👁️ View Details
-                                        </button>
-                                        {vendor.status === 'pending' && (
-                                            <>
-                                                <button
-                                                    className={styles.successBtn}
-                                                    onClick={() => updateVendorStatus(vendor.id, 'approved')}
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    className={styles.dangerBtn}
-                                                    onClick={() => updateVendorStatus(vendor.id, 'rejected')}
-                                                >
-                                                    Reject
-                                                </button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    ), [vendors, handleViewVendorDetail, updateVendorStatus]);
+    const handleAddAnnouncementSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                `${API_URL}/api/auth/announcement`,
+                announcementForm,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            if (response.data.success) {
+                alert('✅ Announcement sent successfully!');
+                setShowAddAnnouncement(false);
+                setAnnouncementForm({ title: '', content: '', audience: 'all' });
+                loadAllDashboardData();
+            }
+        } catch (error) {
+            alert('❌ Failed to send announcement');
+        }
+    };
 
-    const renderAdminEmployees = useCallback(() => (
-        <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>👥 Admin Employees</h2>
-                <button className={styles.primaryBtn} onClick={() => setShowAddEmployee(true)}>
-                    + Add Employee
-                </button>
-            </div>
-            <div className={styles.employeeGrid}>
-                {adminEmployees.map((employee) => (
-                    <div key={employee.id} className={styles.employeeCard}>
-                        <div className={styles.employeeIcon}>👤</div>
-                        <div className={styles.employeeName}>{employee.name}</div>
-                        <div className={styles.employeeRole}>{employee.role}</div>
-                        <div className={styles.employeeEmail}>{employee.email}</div>
-                        <button className={styles.dangerBtn} onClick={() => handleDeleteEmployee(employee.id)}>
-                            Remove
-                        </button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    ), [adminEmployees, handleDeleteEmployee]);
+    const handleDeleteAnnouncement = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this announcement?')) return;
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_URL}/api/auth/announcement/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            alert('✅ Announcement deleted successfully!');
+            loadAllDashboardData();
+        } catch (error) {
+            alert('❌ Failed to delete announcement');
+        }
+    };
 
-    const renderCommissionTypes = useCallback(() => (
-        <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>💰 Commission Types</h2>
-                <button className={styles.primaryBtn} onClick={() => setShowAddCommission(true)}>
-                    + Add Commission
-                </button>
-            </div>
-            <div className={styles.commissionGrid}>
-                {commissionTypes.map((commission) => (
-                    <div key={commission.id} className={styles.commissionCard}>
-                        <div>
-                            <div className={styles.commissionName}>{commission.name}</div>
-                            <div className={styles.commissionDesc}>{commission.description}</div>
-                        </div>
-                        <div className={styles.commissionValue}>{commission.value}</div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    ), [commissionTypes]);
-
-    const renderCoupons = useCallback(() => (
-        <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>🎫 Coupons</h2>
-                <button className={styles.primaryBtn} onClick={() => setShowAddCoupon(true)}>
-                    + Create Coupon
-                </button>
-            </div>
-            <div className={styles.couponGrid}>
-                {coupons.map((coupon) => (
-                    <div key={coupon.id} className={styles.couponCard}>
-                        <div className={styles.couponCode}>{coupon.code}</div>
-                        <div className={styles.couponDiscount}>{coupon.discount} Off</div>
-                        <div className={styles.couponExpiry}>Expires: {coupon.expiry}</div>
-                        <div className={styles.couponExpiry}>Used: {coupon.usage} times</div>
-                        <button className={styles.dangerBtn} onClick={() => handleDeleteCoupon(coupon.id)}>
-                            Delete
-                        </button>
-                    </div>
-                ))}
-            </div>
-        </div>
-    ), [coupons, handleDeleteCoupon]);
-
-    const renderAnnouncements = useCallback(() => (
-        <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle}>📢 Announcements</h2>
-                <button className={styles.primaryBtn} onClick={() => setShowAddAnnouncement(true)}>
-                    + Send Announcement
-                </button>
-            </div>
-            {announcements.map((announcement) => (
-                <div key={announcement.id} className={styles.announcementItem}>
-                    <div className={styles.announcementTitle}>{announcement.title}</div>
-                    <div className={styles.announcementContent}>{announcement.content}</div>
-                    <div className={styles.announcementDate}>
-                        {announcement.date} • Audience: {announcement.audience}
-                    </div>
-                </div>
-            ))}
-        </div>
-    ), [announcements]);
-
-    const renderCustomers = useCallback(() => (
-        <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>🛍️ Customers</h2>
-            <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Orders</th>
-                            <th>Joined</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {customers.map((customer) => (
-                            <tr key={customer.id}>
-                                <td>{customer.name}</td>
-                                <td>{customer.email}</td>
-                                <td>{customer.orders}</td>
-                                <td>{customer.joined}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    ), [customers]);
-
-    const renderRiders = useCallback(() => (
-        <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>🛵 Riders</h2>
-            <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Deliveries</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {riders.map((rider) => (
-                            <tr key={rider.id}>
-                                <td>{rider.name}</td>
-                                <td>{rider.email}</td>
-                                <td>{rider.deliveries}</td>
-                                <td>
-                                    <span className={`${styles.statusBadge} ${rider.status === 'Active' ? styles.statusActive : styles.statusInactive
-                                        }`}>
-                                        {rider.status}
-                                    </span>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    ), [riders]);
-
-    // ============================================
-    // MAIN RENDER
-    // ============================================
-    if (loading) {
-        return <div className={styles.loading}>Loading...</div>;
-    }
+    if (loading) return <div className={styles.loading}>Loading...</div>;
 
     return (
         <div className={styles.container}>
-            {/* Sidebar */}
+            {/* SIDEBAR */}
             <div className={styles.sidebar}>
-                <h2 className={styles.logo}>🛒 Admin</h2>
+                <div className={styles.logo}>⚙️ Admin Panel</div>
                 <ul className={styles.menu}>
-                    <li className={activeTab === 'dashboard' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('dashboard')}>
-                        Dashboard
-                    </li>
-                    <li className={activeTab === 'vendors' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('vendors')}>
-                        Vendors
-                    </li>
-                    <li className={activeTab === 'customers' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('customers')}>
-                        Customers
-                    </li>
-                    <li className={activeTab === 'riders' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('riders')}>
-                        Riders
-                    </li>
-                    <li className={activeTab === 'employees' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('employees')}>
-                        Admin Employees
-                    </li>
-                    <li className={activeTab === 'commission' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('commission')}>
-                        Commission Types
-                    </li>
-                    <li className={activeTab === 'coupons' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('coupons')}>
-                        Coupons
-                    </li>
-                    <li className={activeTab === 'announcements' ? styles.menuItemActive : styles.menuItem} onClick={() => handleTabChange('announcements')}>
-                        Announcements
-                    </li>
-                    <li className={styles.menuItemLogout} onClick={handleLogout}>Logout</li>
+                    <li className={activeTab === 'dashboard' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('dashboard')}>📊 Dashboard</li>
+                    <li className={activeTab === 'vendors' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('vendors')}>🏪 Vendors</li>
+                    <li className={activeTab === 'customers' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('customers')}>👥 Customers</li>
+                    <li className={activeTab === 'riders' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('riders')}>🚚 Riders</li>
+                    <li className={activeTab === 'employees' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('employees')}>👔 Employees</li>
+                    <li className={activeTab === 'commission' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('commission')}>💰 Commission</li>
+                    <li className={activeTab === 'coupons' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('coupons')}>🎟️ Coupons</li>
+                    <li className={activeTab === 'announcements' ? styles.menuItemActive : styles.menuItem} onClick={() => setActiveTab('announcements')}>📢 Announcements</li>
+                    <li className={styles.menuItemLogout} onClick={() => { localStorage.clear(); router.push('/auth/login'); }}>🔒 Logout</li>
                 </ul>
             </div>
 
-            {/* Main Content */}
+            {/* MAIN CONTENT */}
             <div className={styles.main}>
-                <div className={styles.header}>
-                    <h1>Admin Dashboard</h1>
-                    <p>Welcome back, Admin!</p>
-                </div>
 
+                {/* DASHBOARD */}
                 {activeTab === 'dashboard' && (
                     <>
-                        <div className={styles.statsGrid}>
-                            <div className={styles.statCard}>
-                                <h3>Total Vendors</h3>
-                                <p className={styles.statValue}>{vendors.length}</p>
-                                <span className={styles.statChange}>+{vendors.filter(v => v.status === 'approved').length} approved</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <h3>Total Customers</h3>
-                                <p className={styles.statValue}>{customers.length}</p>
-                                <span className={styles.statChange}>+12 this week</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <h3>Total Riders</h3>
-                                <p className={styles.statValue}>{riders.length}</p>
-                                <span className={styles.statChange}>+3 this month</span>
-                            </div>
-                            <div className={styles.statCard}>
-                                <h3>Pending Vendors</h3>
-                                <p className={styles.statValue}>{vendors.filter(v => v.status === 'pending').length}</p>
-                                <span className={styles.statChange}>⏳ Awaiting approval</span>
-                            </div>
+                        <div className={styles.header}>
+                            <h2>Admin Dashboard</h2>
+                            <p>Welcome back, Admin!</p>
                         </div>
-                        {renderVendors()}
-                        {renderAnnouncements()}
+                        <div className={styles.statsGrid}>
+                            <div className={styles.statCard}><h3>Vendors</h3><p className={styles.statValue}>{vendors.length}</p></div>
+                            <div className={styles.statCard}><h3>Riders</h3><p className={styles.statValue}>{riders.length}</p></div>
+                            <div className={styles.statCard}><h3>Customers</h3><p className={styles.statValue}>{customers.length}</p></div>
+                            <div className={styles.statCard}><h3>Pending</h3><p className={styles.statValue}>{vendors.filter(v => v.status === 'pending').length}</p></div>
+                        </div>
                     </>
                 )}
 
-                {activeTab === 'vendors' && renderVendors()}
-                {activeTab === 'customers' && renderCustomers()}
-                {activeTab === 'riders' && renderRiders()}
-                {activeTab === 'employees' && renderAdminEmployees()}
-                {activeTab === 'commission' && renderCommissionTypes()}
-                {activeTab === 'coupons' && renderCoupons()}
-                {activeTab === 'announcements' && renderAnnouncements()}
+                {/* VENDORS */}
+                {activeTab === 'vendors' && (
+                    <div className={styles.section}>
+                        <h3 className={styles.sectionTitle}>Vendor Approvals</h3>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr><th>Shop Name</th><th>Owner</th><th>Email</th><th>Status</th><th>Actions</th></tr>
+                            </thead>
+                            <tbody>
+                                {vendors.map(v => (
+                                    <tr key={v.id}>
+                                        <td>{v.shopName}</td>
+                                        <td>{v.ownerName}</td>
+                                        <td>{v.email}</td>
+                                        <td><span className={`${styles.statusBadge} ${v.status === 'approved' ? styles.statusApproved : v.status === 'pending' ? styles.statusPending : styles.statusRejected}`}>{v.status}</span></td>
+                                        <td><button className={styles.primaryBtn} onClick={() => { setSelectedVendor(v); setShowVendorDetail(true); }}>Review</button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* CUSTOMERS */}
+                {activeTab === 'customers' && (
+                    <div className={styles.section}>
+                        <h3 className={styles.sectionTitle}>Customers</h3>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr><th>Name</th><th>Email</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                {customers.map(c => (
+                                    <tr key={c.id}>
+                                        <td>{c.name}</td>
+                                        <td>{c.email}</td>
+                                        <td><span className={`${styles.statusBadge} ${styles.statusApproved}`}>{c.status}</span></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* RIDERS */}
+                {activeTab === 'riders' && (
+                    <div className={styles.section}>
+                        <h3 className={styles.sectionTitle}>Riders</h3>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr><th>Name</th><th>Email</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                {riders.map(r => (
+                                    <tr key={r.id}>
+                                        <td>{r.name}</td>
+                                        <td>{r.email}</td>
+                                        <td><span className={`${styles.statusBadge} ${styles.statusApproved}`}>{r.status}</span></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* EMPLOYEES */}
+                {activeTab === 'employees' && (
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h3 className={styles.sectionTitle}>👔 Admin Employees</h3>
+                            <button className={styles.primaryBtn} onClick={() => setShowAddEmployee(true)}>+ Add Employee</button>
+                        </div>
+                        {adminEmployees.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}><p>No employees added yet.</p></div>
+                        ) : (
+                            <div className={styles.employeeGrid}>
+                                {adminEmployees.map(emp => (
+                                    <div key={emp.id} className={styles.employeeCard}>
+                                        <div className={styles.employeeIcon}>👤</div>
+                                        <div className={styles.employeeName}>{emp.name}</div>
+                                        <div className={styles.employeeRole}>{emp.role}</div>
+                                        <div className={styles.employeeEmail}>{emp.email}</div>
+                                        <button className={styles.dangerBtn} onClick={() => handleDeleteEmployee(emp.id)}>Remove</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* COMMISSION */}
+                {activeTab === 'commission' && (
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h3 className={styles.sectionTitle}>💰 Commission Rules</h3>
+                            <button className={styles.primaryBtn} onClick={() => setShowAddCommission(true)}>+ Add Rule</button>
+                        </div>
+                        {commissionTypes.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}><p>No commission rules defined.</p></div>
+                        ) : (
+                            <div className={styles.commissionGrid}>
+                                {commissionTypes.map(c => (
+                                    <div key={c.id} className={styles.commissionCard}>
+                                        <div><div className={styles.commissionName}>{c.name}</div><div className={styles.commissionDesc}>{c.description}</div></div>
+                                        <div className={styles.commissionValue}>{c.value}</div>
+                                        <button className={styles.dangerBtn} onClick={() => handleDeleteCommission(c.id)}>Delete</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* COUPONS */}
+                {activeTab === 'coupons' && (
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h3 className={styles.sectionTitle}>🎟️ Coupons</h3>
+                            <button className={styles.primaryBtn} onClick={() => setShowAddCoupon(true)}>+ Create Coupon</button>
+                        </div>
+                        {coupons.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}><p>No coupons created yet.</p></div>
+                        ) : (
+                            <div className={styles.couponGrid}>
+                                {coupons.map(cp => (
+                                    <div key={cp.id} className={styles.couponCard}>
+                                        <div className={styles.couponCode}>{cp.code}</div>
+                                        <div className={styles.couponDiscount}>{cp.discount} Off</div>
+                                        <div className={styles.couponExpiry}>Expires: {cp.expiry}</div>
+                                        <div style={{ fontSize: '11px' }}>Used: {cp.usage} times</div>
+                                        <button className={styles.dangerBtn} onClick={() => handleDeleteCoupon(cp.id)}>Delete</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ANNOUNCEMENTS */}
+                {activeTab === 'announcements' && (
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeader}>
+                            <h3 className={styles.sectionTitle}>📢 Announcements</h3>
+                            <button className={styles.successBtn} onClick={() => setShowAddAnnouncement(true)}>+ Send Announcement</button>
+                        </div>
+                        {announcements.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}><p>No announcements sent yet.</p></div>
+                        ) : (
+                            <div>
+                                {announcements.map(an => (
+                                    <div key={an.id} className={styles.announcementItem}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span className={styles.announcementTitle}>{an.title}</span>
+                                            <span className={styles.statusBadge} style={{ backgroundColor: '#edf2f7' }}>To: {an.audience}</span>
+                                        </div>
+                                        <p className={styles.announcementContent}>{an.content}</p>
+                                        <div className={styles.announcementDate}>{an.date}</div>
+                                        <button className={styles.dangerBtn} onClick={() => handleDeleteAnnouncement(an.id)}>Delete</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* Modals */}
-            {renderAddCouponModal()}
-            {renderAddAnnouncementModal()}
-            {renderAddEmployeeModal()}
-            {renderAddCommissionModal()}
-            {renderVendorDetailModal()}
+            {/* ============================================
+                MODALS
+            ============================================ */}
+
+            {/* ADD EMPLOYEE MODAL */}
+            {showAddEmployee && (
+                <div className={styles.modalOverlay} onClick={() => setShowAddEmployee(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <h3 className={styles.modalTitle}>Add Employee</h3>
+                        <form onSubmit={handleAddEmployeeSubmit}>
+                            <div className={styles.formGroup}><label>Name</label><input type="text" className={styles.formInput} required value={employeeForm.name} onChange={e => setEmployeeForm({...employeeForm, name: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Email</label><input type="email" className={styles.formInput} required value={employeeForm.email} onChange={e => setEmployeeForm({...employeeForm, email: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Role</label>
+                                <select className={styles.formSelect} value={employeeForm.role} onChange={e => setEmployeeForm({...employeeForm, role: e.target.value})} title="Select Role">
+                                    <option>Vendor Manager</option>
+                                    <option>Product Moderator</option>
+                                    <option>Order Manager</option>
+                                    <option>Finance Manager</option>
+                                    <option>Support Manager</option>
+                                </select>
+                            </div>
+                            <button type="submit" className={styles.primaryBtn} style={{ marginTop: '10px', width: '100%' }}>Add Employee</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD COUPON MODAL */}
+            {showAddCoupon && (
+                <div className={styles.modalOverlay} onClick={() => setShowAddCoupon(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <h3 className={styles.modalTitle}>Create Coupon</h3>
+                        <form onSubmit={handleAddCouponSubmit}>
+                            <div className={styles.formGroup}><label>Code</label><input type="text" className={styles.formInput} placeholder="e.g., FLAT20" required value={couponForm.code} onChange={e => setCouponForm({...couponForm, code: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Type</label>
+                                <select className={styles.formSelect} value={couponForm.type} onChange={e => setCouponForm({...couponForm, type: e.target.value as 'percentage' | 'fixed'})} title="Select Coupon Type">
+                                    <option value="percentage">Percentage</option>
+                                    <option value="fixed">Fixed Amount</option>
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}><label>Discount</label><input type="text" className={styles.formInput} placeholder="15% or 150" required value={couponForm.discount} onChange={e => setCouponForm({...couponForm, discount: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Expiry</label><input type="date" className={styles.formInput} required value={couponForm.expiry} onChange={e => setCouponForm({...couponForm, expiry: e.target.value})} /></div>
+                            <button type="submit" className={styles.primaryBtn} style={{ marginTop: '10px', width: '100%' }}>Create Coupon</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD ANNOUNCEMENT MODAL */}
+            {showAddAnnouncement && (
+                <div className={styles.modalOverlay} onClick={() => setShowAddAnnouncement(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <h3 className={styles.modalTitle}>Send Announcement</h3>
+                        <form onSubmit={handleAddAnnouncementSubmit}>
+                            <div className={styles.formGroup}><label>Title</label><input type="text" className={styles.formInput} required value={announcementForm.title} onChange={e => setAnnouncementForm({...announcementForm, title: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Content</label><textarea className={styles.formTextarea} rows={4} required value={announcementForm.content} onChange={e => setAnnouncementForm({...announcementForm, content: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Audience</label>
+                                <select className={styles.formSelect} value={announcementForm.audience} onChange={e => setAnnouncementForm({...announcementForm, audience: e.target.value as 'all' | 'vendors' | 'customers' | 'riders'})} title="Select Audience">
+                                    <option value="all">All Users</option>
+                                    <option value="vendors">Vendors</option>
+                                    <option value="customers">Customers</option>
+                                    <option value="riders">Riders</option>
+                                </select>
+                            </div>
+                            <button type="submit" className={styles.successBtn} style={{ marginTop: '10px', width: '100%' }}>Send</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD COMMISSION MODAL */}
+            {showAddCommission && (
+                <div className={styles.modalOverlay} onClick={() => setShowAddCommission(false)}>
+                    <div className={styles.modal} onClick={e => e.stopPropagation()}>
+                        <h3 className={styles.modalTitle}>Add Commission Rule</h3>
+                        <form onSubmit={handleAddCommissionSubmit}>
+                            <div className={styles.formGroup}><label>Name</label><input type="text" className={styles.formInput} required value={commissionForm.name} onChange={e => setCommissionForm({...commissionForm, name: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Type</label>
+                                <select className={styles.formSelect} value={commissionForm.type} onChange={e => setCommissionForm({...commissionForm, type: e.target.value as 'percentage' | 'fixed'})} title="Select Commission Type">
+                                    <option value="percentage">Percentage</option>
+                                    <option value="fixed">Fixed</option>
+                                </select>
+                            </div>
+                            <div className={styles.formGroup}><label>Value</label><input type="text" className={styles.formInput} placeholder="e.g., 2% or PKR 20" required value={commissionForm.value} onChange={e => setCommissionForm({...commissionForm, value: e.target.value})} /></div>
+                            <div className={styles.formGroup}><label>Description</label><input type="text" className={styles.formInput} required value={commissionForm.description} onChange={e => setCommissionForm({...commissionForm, description: e.target.value})} /></div>
+                            <button type="submit" className={styles.primaryBtn} style={{ marginTop: '10px', width: '100%' }}>Add</button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* VENDOR DETAIL MODAL */}
+            {showVendorDetail && selectedVendor && (
+                <div className={styles.modalOverlay} onClick={() => setShowVendorDetail(false)}>
+                    <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>📋 Vendor Details</h3>
+                            <button className={styles.modalClose} onClick={() => setShowVendorDetail(false)}>×</button>
+                        </div>
+                        <div className={styles.detailGrid}>
+                            <div><label className={styles.detailLabel}>Shop Name</label><p>{selectedVendor.shopName}</p></div>
+                            <div><label className={styles.detailLabel}>Owner</label><p>{selectedVendor.ownerName}</p></div>
+                            <div><label className={styles.detailLabel}>Email</label><p>{selectedVendor.email}</p></div>
+                            <div><label className={styles.detailLabel}>Phone</label><p>{selectedVendor.phone}</p></div>
+                            <div className={styles.detailFull}><label className={styles.detailLabel}>Address</label><p>{selectedVendor.shopAddress}</p></div>
+                        </div>
+                        <div className={styles.modalActions}>
+                            {selectedVendor.status === 'pending' && (
+                                <>
+                                    <button className={styles.successBtn} onClick={() => updateVendorStatus(selectedVendor.id, 'approved')}>Approve</button>
+                                    <button className={styles.dangerBtn} onClick={() => updateVendorStatus(selectedVendor.id, 'rejected')}>Reject</button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

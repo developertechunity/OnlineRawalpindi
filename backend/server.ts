@@ -39,8 +39,4 @@ mongoose.connect(process.env.MONGO_URI!)
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`... Register: POST /api/auth/register`);
-    console.log(`🔑 Login: POST /api/auth/login`);
-    console.log(`🔒 Forgot Password: POST /api/auth/forgot-password`);
-    console.log(`📋 Vendors: GET /api/auth/vendors (Protected Admin Module)`);
-    console.log(`📝 Update Vendor: PUT /api/auth/vendor/:id/status (Protected Admin Module)`);
 });

@@ -184,43 +184,6 @@
     background-color: #c82333;
 }
 
-.secondaryBtn {
-    padding: 10px 20px;
-    background-color: white;
-    color: #4a6cf7;
-    border: 2px solid #4a6cf7;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.secondaryBtn:hover {
-    background-color: #f0f2f5;
-}
-
-.warningBtn {
-    padding: 8px 16px;
-    background-color: #ffc107;
-    color: #333;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    font-size: 12px;
-}
-
-.warningBtn:hover {
-    background-color: #e0a800;
-}
-
-.btnMarginRight {
-    margin-right: 5px;
-}
-
-.btnMarginTop {
-    margin-top: 10px;
-}
-
 /* Table */
 .tableContainer {
     overflow-x: auto;
@@ -268,373 +231,101 @@
     color: #721c24;
 }
 
-.statusActive {
-    background-color: #d4edda;
-    color: #155724;
+/* Forms input configs */
+.formGroup {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
-.statusInactive {
-    background-color: #f8d7da;
-    color: #721c24;
+.formLabel {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
 }
 
-/* Employee Cards */
-.employeeGrid {
+.formInput, .formSelect, .formTextarea {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 100%;
+}
+
+/* Employee & Commissions grids */
+.employeeGrid, .couponGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 20px;
 }
 
-.employeeCard {
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
-    transition: all 0.3s ease;
+.commissionGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
 }
 
-.employeeCard:hover {
-    border-color: #4a6cf7;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+.employeeCard, .couponCard, .commissionCard {
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
 
 .employeeIcon {
-    font-size: 40px;
+    font-size: 32px;
     margin-bottom: 10px;
 }
 
 .employeeName {
-    font-weight: 600;
-    color: #1a1a2e;
-}
-
-.employeeRole {
-    font-size: 12px;
-    color: #6c757d;
-}
-
-.employeeEmail {
-    font-size: 12px;
-    color: #6c757d;
-    margin-top: 5px;
-}
-
-/* Commission Types */
-.commissionGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 15px;
-}
-
-.commissionCard {
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.commissionName {
-    font-weight: 600;
-    color: #1a1a2e;
-}
-
-.commissionValue {
+    font-size: 16px;
     font-weight: 700;
-    color: #4a6cf7;
-}
-
-.commissionDesc {
-    font-size: 12px;
-    color: #6c757d;
-}
-
-/* Coupon Cards */
-.couponGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 15px;
-}
-
-.couponCard {
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 15px;
-    text-align: center;
 }
 
 .couponCode {
-    font-size: 18px;
-    font-weight: 700;
+    font-weight: bold;
     color: #4a6cf7;
-    background-color: #f0f4ff;
-    padding: 5px 10px;
-    border-radius: 6px;
-    display: inline-block;
-    margin-bottom: 5px;
+    background-color: #eef2ff;
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
-.couponDiscount {
-    font-size: 14px;
-    color: #28a745;
-    font-weight: 600;
-}
-
-.couponExpiry {
-    font-size: 12px;
-    color: #6c757d;
-}
-
-/* Announcements */
 .announcementItem {
-    padding: 15px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid #edf2f7;
+    padding: 15px 0;
 }
 
 .announcementTitle {
-    font-weight: 600;
-    color: #1a1a2e;
+    font-weight: 700;
+    font-size: 16px;
 }
 
-.announcementContent {
-    color: #555;
-    font-size: 14px;
-    margin-top: 5px;
-}
-
-.announcementDate {
-    font-size: 12px;
-    color: #6c757d;
-    margin-top: 5px;
-}
-
-/* Modal */
+/* Modal Styling */
 .modalOverlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0,0,0,0.4);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9999;
 }
 
 .modal {
-    background-color: white;
-    padding: 30px;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modalHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 .modalTitle {
-    font-size: 20px;
-    font-weight: 700;
-    color: #1a1a2e;
-}
-
-.modalClose {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #6c757d;
-}
-
-.modalClose:hover {
-    color: #dc3545;
-}
-
-/* Form */
-.formGroup {
-    margin-bottom: 15px;
-}
-
-.formLabel {
-    display: block;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.formInput {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-}
-
-.formInput:focus {
-    border-color: #4a6cf7;
-    outline: none;
-}
-
-.formTextarea {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    resize: vertical;
-    min-height: 80px;
-}
-
-.formTextarea:focus {
-    border-color: #4a6cf7;
-    outline: none;
-}
-
-.formSelect {
-    width: 100%;
-    padding: 10px 14px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    background-color: white;
-}
-
-.formSelect:focus {
-    border-color: #4a6cf7;
-    outline: none;
-}
-
-/* Vendor Detail Grid */
-.detailGrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.detailLabel {
-    font-weight: 600;
-    font-size: 12px;
-    color: #6c757d;
-    display: block;
-}
-
-.detailValue {
-    margin: 5px 0;
-    color: #1a1a2e;
-}
-
-.detailFull {
-    grid-column: 1 / -1;
-}
-
-/* CNIC Images */
-.cnicContainer {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.cnicBox {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-    background-color: #f8f9fa;
-    text-align: center;
-    min-height: 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cnicImage {
-    max-width: 100%;
-    max-height: 120px;
-    object-fit: contain;
-}
-
-.cnicEmpty {
-    color: #6c757d;
-}
-
-/* Modal Actions */
-.modalActions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.modalActions .flex1 {
-    flex: 1;
-}
-
-/* CNIC Section */
-.cnicSection {
-    margin-bottom: 20px;
-}
-
-.cnicSection h4 {
-    margin-bottom: 10px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .statsGrid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .sidebar {
-        width: 200px;
-        padding: 15px;
-    }
-    
-    .main {
-        padding: 20px;
-    }
-    
-    .employeeGrid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-    
-    .detailGrid {
-        grid-template-columns: 1fr;
-    }
-    
-    .cnicContainer {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 480px) {
-    .statsGrid {
-        grid-template-columns: 1fr;
-    }
-    
-    .sidebar {
-        width: 60px;
-        padding: 10px;
-    }
-    
-    .logo {
-        font-size: 16px;
-    }
-    
-    .menuItem {
-        padding: 10px;
-        font-size: 12px;
-    }
-    
-    .modal {
-        padding: 20px;
-        max-width: 95%;
-    }
+    margin-top: 0;
+    font-size: 18px;
 }
