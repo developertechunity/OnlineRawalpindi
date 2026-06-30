@@ -1,4 +1,4 @@
-/* vendor.module.css */
+/* vendor.module.css - Complete Updated */
 
 .container {
     display: flex;
@@ -7,7 +7,9 @@
     background-color: #f0f2f5;
 }
 
-/* Sidebar */
+/* ============================================
+   SIDEBAR
+   ============================================ */
 .sidebar {
     width: 250px;
     background-color: #1a1a2e;
@@ -18,17 +20,20 @@
     top: 0;
     height: 100vh;
     overflow-y: auto;
+    flex-shrink: 0;
 }
 
 .logo {
     font-size: 24px;
     margin-bottom: 30px;
     color: #4a6cf7;
+    font-weight: 700;
 }
 
 .menu {
     list-style: none;
     padding: 0;
+    margin: 0;
 }
 
 .menuItem {
@@ -37,6 +42,10 @@
     cursor: pointer;
     margin-bottom: 5px;
     transition: background-color 0.3s ease;
+    color: #c0c0d8;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .menuItem:hover {
@@ -49,6 +58,10 @@
     cursor: pointer;
     margin-bottom: 5px;
     background-color: #4a6cf7;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .menuItemLogout {
@@ -58,20 +71,38 @@
     margin-bottom: 5px;
     color: #dc3545;
     margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .menuItemLogout:hover {
     background-color: #2d2d44;
 }
 
-/* Main Content */
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
 .main {
     flex: 1;
     padding: 30px;
+    min-width: 0;
 }
 
 .header {
     margin-bottom: 30px;
+}
+
+.header h1 {
+    color: #1a1a2e;
+    margin: 0;
+    font-size: 28px;
+}
+
+.header p {
+    color: #6c757d;
+    margin: 5px 0 0;
+    font-size: 16px;
 }
 
 .loading {
@@ -80,9 +111,12 @@
     align-items: center;
     min-height: 100vh;
     font-size: 18px;
+    color: #1a1a2e;
 }
 
-/* Stats Grid */
+/* ============================================
+   STATS GRID
+   ============================================ */
 .statsGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -95,12 +129,19 @@
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .statCard h3 {
     font-size: 14px;
     color: #6c757d;
     margin: 0 0 5px 0;
+    font-weight: 600;
 }
 
 .statValue {
@@ -115,7 +156,324 @@
     color: #28a745;
 }
 
-/* Actions */
+.statSub {
+    font-size: 12px;
+    color: #6c757d;
+    display: block;
+    margin-top: 5px;
+}
+
+/* ============================================
+   PRODUCT GRID - BOX STRUCTURE
+   ============================================ */
+.productGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.productCard {
+    background-color: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.productCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.productImageContainer {
+    position: relative;
+    height: 180px;
+    background-color: #f8f9fa;
+    overflow: hidden;
+}
+
+.productImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.productCard:hover .productImage {
+    transform: scale(1.05);
+}
+
+.productImagePlaceholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #ccc;
+    background-color: #f0f2f5;
+}
+
+.productStatus {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.statusActive {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.statusInactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.productInfo {
+    padding: 15px;
+}
+
+.productName {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin: 0 0 5px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.productPrice {
+    font-size: 18px;
+    font-weight: 700;
+    color: #4a6cf7;
+    margin: 5px 0;
+}
+
+.productMeta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.productStock {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.productColors {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.colorDot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    display: inline-block;
+}
+
+.moreColors {
+    font-size: 10px;
+    color: #6c757d;
+    margin-left: 2px;
+}
+
+.productActions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.productActions button {
+    flex: 1;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+/* ============================================
+   DETAIL MODAL
+   ============================================ */
+.detailModal {
+    max-width: 700px !important;
+}
+
+.detailContent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.detailImages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.detailImageGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+}
+
+.detailImage {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    transition: transform 0.2s ease;
+}
+
+.detailImage:hover {
+    transform: scale(1.05);
+}
+
+.noImage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 150px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    color: #999;
+    font-size: 14px;
+}
+
+.detailInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.detailInfo p {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.detailInfo p strong {
+    color: #1a1a2e;
+    min-width: 80px;
+    display: inline-block;
+}
+
+.detailColors, .detailSizes {
+    margin-top: 5px;
+}
+
+.colorList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.detailColorDot {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: white;
+    border: 1px solid #ddd;
+}
+
+.sizeList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.sizeTag {
+    padding: 4px 12px;
+    background-color: #f0f2f5;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+}
+
+.emptyProducts {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+}
+
+/* ============================================
+   RESPONSIVE - PRODUCT GRID
+   ============================================ */
+@media (max-width: 768px) {
+    .productGrid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 15px;
+    }
+
+    .productImageContainer {
+        height: 140px;
+    }
+
+    .productName {
+        font-size: 14px;
+    }
+
+    .productPrice {
+        font-size: 16px;
+    }
+
+    .detailContent {
+        grid-template-columns: 1fr;
+    }
+
+    .detailImageGrid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    }
+
+    .detailImage {
+        height: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    .productGrid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .productImageContainer {
+        height: 120px;
+    }
+
+    .productInfo {
+        padding: 10px;
+    }
+
+    .productActions {
+        flex-direction: column;
+    }
+
+    .productActions button {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
 .actions {
     display: flex;
     gap: 15px;
@@ -131,10 +489,17 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .primaryBtn:hover {
     background-color: #3a5bd9;
+}
+
+.primaryBtn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
 }
 
 .secondaryBtn {
@@ -145,10 +510,17 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .secondaryBtn:hover {
     background-color: #f0f2f5;
+}
+
+.secondaryBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .successBtn {
@@ -159,6 +531,8 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .successBtn:hover {
@@ -166,20 +540,40 @@
 }
 
 .dangerBtn {
-    padding: 12px 25px;
+    padding: 8px 16px;
     background-color: #dc3545;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .dangerBtn:hover {
     background-color: #c82333;
 }
 
-/* Sections */
+.warningBtn {
+    padding: 8px 16px;
+    background-color: #ffc107;
+    color: #333;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.warningBtn:hover {
+    background-color: #e0a800;
+}
+
+/* ============================================
+   SECTIONS
+   ============================================ */
 .section {
     background-color: white;
     padding: 25px;
@@ -195,7 +589,24 @@
     margin: 0 0 20px 0;
 }
 
-/* Subscription Plan */
+.sectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.sectionHeader h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #1a1a2e;
+}
+
+/* ============================================
+   SUBSCRIPTION PLANS
+   ============================================ */
 .subscriptionCard {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -209,6 +620,7 @@
     text-align: center;
     transition: all 0.3s ease;
     cursor: pointer;
+    background-color: white;
 }
 
 .planCard:hover {
@@ -260,35 +672,48 @@
     font-size: 12px;
 }
 
-/* Orders Table */
+/* ============================================
+   TABLE
+   ============================================ */
 .tableContainer {
     overflow-x: auto;
+    margin-top: 15px;
 }
 
 .table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 14px;
 }
 
 .table th {
     text-align: left;
-    padding: 12px;
+    padding: 12px 15px;
     border-bottom: 2px solid #e0e0e0;
     font-weight: 600;
     color: #333;
+    background-color: #f8f9fa;
 }
 
 .table td {
-    padding: 12px;
+    padding: 12px 15px;
     border-bottom: 1px solid #e0e0e0;
     color: #555;
 }
 
+.table tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
 .statusBadge {
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 12px;
     display: inline-block;
+    font-weight: 500;
 }
 
 .statusPending {
@@ -311,28 +736,51 @@
     color: #155724;
 }
 
-/* Employees */
+.statusApproved {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.statusRejected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ============================================
+   ✅ EMPLOYEES - DARK TEXT (FIXED)
+   ============================================ */
 .employeeItem {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 0;
+    padding: 14px 0;
     border-bottom: 1px solid #f0f0f0;
+}
+
+.employeeItem:last-child {
+    border-bottom: none;
 }
 
 .employeeInfo {
     display: flex;
     flex-direction: column;
+    gap: 3px;
 }
 
 .employeeName {
     font-weight: 600;
     color: #1a1a2e;
+    font-size: 16px;
 }
 
 .employeeRole {
-    font-size: 12px;
-    color: #6c757d;
+    font-size: 13px;
+    color: #555;
+}
+
+.employeeEmail {
+    font-size: 13px;
+    color: #555;
 }
 
 .employeeActions {
@@ -340,41 +788,65 @@
     gap: 10px;
 }
 
-/* Store Hours */
+/* ============================================
+   ✅ STORE HOURS - DARK TEXT (FIXED)
+   ============================================ */
 .hoursGrid {
     display: grid;
-    gap: 10px;
+    gap: 12px;
 }
 
 .hoursRow {
     display: flex;
     align-items: center;
     gap: 15px;
-    padding: 8px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #f0f0f0;
 }
 
+.hoursRow:last-child {
+    border-bottom: none;
+}
+
 .hoursDay {
-    width: 100px;
+    width: 120px;
     font-weight: 600;
-    color: #333;
+    color: #1a1a2e;
+    text-transform: capitalize;
+    font-size: 15px;
 }
 
 .hoursInput {
-    padding: 6px 10px;
+    padding: 8px 12px;
     border: 1px solid #ddd;
     border-radius: 6px;
     font-size: 14px;
+    background-color: white;
+    color: #1a1a2e;
+    font-weight: 500;
+    width: 110px;
 }
 
 .hoursInput:focus {
     border-color: #4a6cf7;
     outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
 }
 
-/* Form */
+.hoursInput::placeholder {
+    color: #999;
+}
+
+.hoursSeparator {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+/* ============================================
+   FORM
+   ============================================ */
 .formGroup {
-    margin-bottom: 15px;
+    margin-bottom: 18px;
 }
 
 .formLabel {
@@ -382,6 +854,7 @@
     font-weight: 600;
     color: #333;
     margin-bottom: 5px;
+    font-size: 14px;
 }
 
 .formInput {
@@ -390,11 +863,20 @@
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 14px;
+    background-color: white;
+    color: #333;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
 }
 
 .formInput:focus {
     border-color: #4a6cf7;
     outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.formInput::placeholder {
+    color: #6c757d;
 }
 
 .formTextarea {
@@ -405,11 +887,21 @@
     font-size: 14px;
     resize: vertical;
     min-height: 80px;
+    background-color: white;
+    color: #333;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+    font-family: inherit;
 }
 
 .formTextarea:focus {
     border-color: #4a6cf7;
     outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.formTextarea::placeholder {
+    color: #6c757d;
 }
 
 .formSelect {
@@ -419,14 +911,26 @@
     border-radius: 8px;
     font-size: 14px;
     background-color: white;
+    color: #333;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+    appearance: auto;
+}
+
+.formSelect option {
+    background-color: white;
+    color: #333;
 }
 
 .formSelect:focus {
     border-color: #4a6cf7;
     outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
 }
 
-/* Modal Overlay */
+/* ============================================
+   MODAL
+   ============================================ */
 .modalOverlay {
     position: fixed;
     top: 0;
@@ -438,6 +942,7 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    animation: fadeIn 0.2s ease;
 }
 
 .modal {
@@ -448,6 +953,7 @@
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
+    animation: slideUp 0.3s ease;
 }
 
 .modalHeader {
@@ -461,6 +967,7 @@
     font-size: 20px;
     font-weight: 700;
     color: #1a1a2e;
+    margin: 0;
 }
 
 .modalClose {
@@ -469,57 +976,400 @@
     font-size: 24px;
     cursor: pointer;
     color: #6c757d;
+    transition: color 0.3s ease;
+    padding: 0 5px;
 }
 
 .modalClose:hover {
     color: #dc3545;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .statsGrid {
-        grid-template-columns: repeat(2, 1fr);
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: white;
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
+    max-width: 400px;
+    font-weight: 500;
+}
+
+.toastSuccess {
+    background-color: #28a745;
+}
+
+.toastError {
+    background-color: #dc3545;
+}
+
+.toastInfo {
+    background-color: #17a2b8;
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
     }
-    
-    .subscriptionCard {
-        grid-template-columns: 1fr;
-    }
-    
-    .sidebar {
-        width: 200px;
-        padding: 15px;
-    }
-    
-    .main {
-        padding: 20px;
-    }
-    
-    .hoursRow {
-        flex-direction: column;
-        align-items: flex-start;
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }
 
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+        height: auto;
+        position: relative;
+        padding: 15px;
+    }
+
+    .menu {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .menuItem, .menuItemActive, .menuItemLogout {
+        padding: 8px 12px;
+        font-size: 13px;
+        margin-bottom: 0;
+        flex: 1 0 auto;
+        text-align: center;
+    }
+
+    .menuItemLogout {
+        margin-top: 0;
+    }
+
+    .main {
+        padding: 15px;
+    }
+
+    .statsGrid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .statValue {
+        font-size: 22px;
+    }
+
+    .statCard {
+        padding: 15px;
+    }
+
+    .section {
+        padding: 15px;
+    }
+
+    .sectionHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .subscriptionCard {
+        grid-template-columns: 1fr;
+    }
+
+    .hoursRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .hoursDay {
+        width: 100%;
+    }
+
+    .hoursInput {
+        width: 100%;
+    }
+
+    .modal {
+        padding: 20px;
+        max-width: 95%;
+        margin: 10px;
+    }
+
+    .table {
+        font-size: 12px;
+    }
+
+    .table th, .table td {
+        padding: 8px 10px;
+    }
+
+    .toast {
+        bottom: 15px;
+        right: 15px;
+        left: 15px;
+        max-width: none;
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+}
+
+/* Small Mobile */
 @media (max-width: 480px) {
     .statsGrid {
         grid-template-columns: 1fr;
     }
-    
+
+    .sidebar {
+        padding: 10px;
+    }
+
+    .logo {
+        font-size: 18px;
+        margin-bottom: 15px;
+    }
+
+    .menuItem, .menuItemActive, .menuItemLogout {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .header h1 {
+        font-size: 22px;
+    }
+
+    .statValue {
+        font-size: 20px;
+    }
+
+    .modal {
+        padding: 15px;
+    }
+
+    .modalTitle {
+        font-size: 17px;
+    }
+
     .actions {
         flex-direction: column;
     }
-    
-    .sidebar {
-        width: 60px;
-        padding: 10px;
+
+    .actions button {
+        width: 100%;
     }
-    
-    .logo {
-        font-size: 16px;
+
+    .employeeItem {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
     }
-    
-    .menuItem {
-        padding: 10px;
-        font-size: 12px;
+
+    .employeeActions {
+        width: 100%;
     }
+
+    .employeeActions button {
+        width: 100%;
+    }
+
+    .hoursRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .hoursDay {
+        width: 100%;
+    }
+
+    .hoursInput {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.textCenter {
+    text-align: center;
+}
+
+.textMuted {
+    color: #6c757d;
+}
+
+.mt10 {
+    margin-top: 10px;
+}
+
+.mt20 {
+    margin-top: 20px;
+}
+
+.mb10 {
+    margin-bottom: 10px;
+}
+
+.mb20 {
+    margin-bottom: 20px;
+}
+
+.flex {
+    display: flex;
+}
+
+.flexBetween {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flexCenter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.gap10 {
+    gap: 10px;
+}
+
+.gap15 {
+    gap: 15px;
+}
+
+.w100 {
+    width: 100%;
+}
+
+/* ============================================
+   ✅ FIX: EMPLOYEE & STORE HOURS - DARK TEXT
+   ============================================ */
+
+/* Employee - Dark Text */
+.employeeItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.employeeInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.employeeName {
+    font-weight: 600;
+    color: #1a1a2e !important;
+    font-size: 16px;
+}
+
+.employeeRole {
+    font-size: 13px;
+    color: #444 !important;
+}
+
+.employeeEmail {
+    font-size: 13px;
+    color: #444 !important;
+}
+
+/* Store Hours - Dark Text */
+.hoursGrid {
+    display: grid;
+    gap: 12px;
+}
+
+.hoursRow {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.hoursDay {
+    width: 120px;
+    font-weight: 600;
+    color: #1a1a2e !important;
+    text-transform: capitalize;
+    font-size: 15px;
+}
+
+.hoursInput {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    color: #1a1a2e !important;
+    font-weight: 500;
+    width: 110px;
+}
+
+.hoursInput:focus {
+    border-color: #4a6cf7;
+    outline: none;
+}
+
+.hoursSeparator {
+    color: #555;
+    font-weight: 500;
+}
+
+/* Make sure text in table is dark too */
+.table td {
+    color: #333 !important;
+}
+
+.table th {
+    color: #1a1a2e !important;
 }

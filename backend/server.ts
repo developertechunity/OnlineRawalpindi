@@ -1,9 +1,18 @@
+// backend/server.ts
+
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from './src/modules/auth/auth.routes.js'; // <--- Aakhir me .js lazmi lagayein
+import path from 'path';  // ✅ Add this
+import { fileURLToPath } from 'url';  // ✅ Add this
+import authRoutes from './src/modules/auth/auth.routes.js';
 import adminRoutes from './src/modules/admin/admin.routes.js';
+import vendorRoutes from './src/modules/vendor/vendor.routes.js';
+
+// ✅ For __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -17,17 +26,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ============================================
-// REGISTER MODULE ROUTES
-// ============================================
-app.use('/api/auth', authRoutes);
+// ✅ Serve static files from uploads folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Taki aap ka frontend route bilkul break na ho aur `/api/auth/vendors` wahi kaam kare
-app.use('/api/auth', adminRoutes); 
+// Register Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/vendor', vendorRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-    res.json({ message: 'DigitalRawalpindi API is running perfectly in Modular Architecture!' });
+    res.json({ message: 'DigitalRawalpindi API is running!' });
 });
 
 // MongoDB Connection
@@ -38,9 +47,8 @@ mongoose.connect(process.env.MONGO_URI!)
 // Start Server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`... Register: POST /api/auth/register`);
-    console.log(`🔑 Login: POST /api/auth/login`);
-    console.log(`🔒 Forgot Password: POST /api/auth/forgot-password`);
-    console.log(`📋 Vendors: GET /api/auth/vendors (Protected Admin Module)`);
-    console.log(`📝 Update Vendor: PUT /api/auth/vendor/:id/status (Protected Admin Module)`);
+    console.log(`🔑 Auth: /api/auth`);
+    console.log(`📋 Admin: /api/admin`);
+    console.log(`📦 Vendor: /api/vendor`);
+    console.log(`📁 Uploads: /uploads`);  // ✅ Added
 });
