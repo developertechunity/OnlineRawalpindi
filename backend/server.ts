@@ -2,15 +2,15 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import authRoutes from './src/modules/auth/auth.routes.js'; // <--- Aakhir me .js lazmi lagayein
+import authRoutes from './src/modules/auth/auth.routes.js';
 import adminRoutes from './src/modules/admin/admin.routes.js';
+import riderRoutes from './src/modules/rider/rider.routes.js'; // ✅ IMPORTANT
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5002;
 
-// Middleware
 app.use(cors({
     origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
     credentials: true
@@ -18,25 +18,27 @@ app.use(cors({
 app.use(express.json());
 
 // ============================================
-// REGISTER MODULE ROUTES
+// REGISTER ALL ROUTES - YEH IMPORTANT HAI
 // ============================================
 app.use('/api/auth', authRoutes);
+app.use('/api/auth', adminRoutes);
+app.use('/api/auth', riderRoutes); // ✅ YEH HONA CHAHIYE
 
-// Taki aap ka frontend route bilkul break na ho aur `/api/auth/vendors` wahi kaam kare
-app.use('/api/auth', adminRoutes); 
-
-// Root route
 app.get('/', (req, res) => {
-    res.json({ message: 'DigitalRawalpindi API is running perfectly in Modular Architecture!' });
+    res.json({ message: 'DigitalRawalpindi API is running!' });
 });
 
-// MongoDB Connection
+console.log('✅ Server starting...');
+
 mongoose.connect(process.env.MONGO_URI!)
     .then(() => console.log('✅ MongoDB connected'))
     .catch(err => console.error('❌ MongoDB error:', err.message));
 
-// Start Server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`... Register: POST /api/auth/register`);
+    console.log('✅ Routes registered:');
+    console.log('   - GET  /api/auth/rider/profile');
+    console.log('   - GET  /api/auth/rider/deliveries');
+    console.log('   - GET  /api/auth/rider/stats');
+    console.log('   - GET  /api/auth/rider/status');
 });

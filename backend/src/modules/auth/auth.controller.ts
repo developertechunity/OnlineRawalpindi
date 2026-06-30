@@ -1,15 +1,20 @@
 import { Request, Response } from 'express';
-import User from './User.model.js'; // Relative Import
+import User from './User.model.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
 
 // ============================================
-// REGISTER
+// REGISTER (UPDATED WITH RIDER + NTN + BUSINESS LICENSE)
 // ============================================
 export const register = async (req: Request, res: Response) => {
     try {
-        const { name, email, password, phone, role, shopName, shopAddress } = req.body;
+        const { 
+            name, email, password, phone, role, 
+            shopName, shopAddress,
+            ntnNumber, // ✅ New Field - Optional
+            vehicleType, vehicleNumber, licenseNumber, zone 
+        } = req.body;
 
         if (!name || !email || !password || !phone) {
             return res.status(400).json({
@@ -40,6 +45,9 @@ export const register = async (req: Request, res: Response) => {
             approvalStatus: 'approved'
         };
 
+        // ============================================
+        // VENDOR REGISTRATION (With NTN + Business License)
+        // ============================================
         if (role === 'vendor') {
             if (!shopName || !shopAddress) {
                 return res.status(400).json({
@@ -51,6 +59,39 @@ export const register = async (req: Request, res: Response) => {
             userData.approvalStatus = 'pending';
             userData.shopName = shopName;
             userData.shopAddress = shopAddress;
+            
+            // ✅ NTN Number - Optional (only if provided)
+            if (ntnNumber) {
+                userData.ntnNumber = ntnNumber;
+            }
+            
+            const files = req.files as any;
+            if (files) {
+                if (files.cnicFront) userData.cnicFront = files.cnicFront[0].path;
+                if (files.cnicBack) userData.cnicBack = files.cnicBack[0].path;
+                // ✅ Business License - Optional (only if uploaded)
+                if (files.businessLicense) {
+                    userData.businessLicense = files.businessLicense[0].path;
+                }
+            }
+        }
+
+        // ============================================
+        // RIDER REGISTRATION
+        // ============================================
+        if (role === 'rider') {
+            if (!vehicleType || !vehicleNumber || !licenseNumber) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Vehicle Type, Vehicle Number, and License Number are required for riders'
+                });
+            }
+
+            userData.approvalStatus = 'pending';
+            userData.vehicleType = vehicleType;
+            userData.vehicleNumber = vehicleNumber;
+            userData.licenseNumber = licenseNumber;
+            userData.zone = zone || 'Rawalpindi';
             
             const files = req.files as any;
             if (files) {
@@ -69,8 +110,8 @@ export const register = async (req: Request, res: Response) => {
 
         res.status(201).json({
             success: true,
-            message: role === 'vendor' 
-                ? 'Registration successful! Your account is pending admin approval.' 
+            message: role === 'vendor' || role === 'rider'
+                ? 'Registration successful! Your account is pending admin approval.'
                 : 'User registered successfully',
             token,
             user: {
@@ -83,6 +124,7 @@ export const register = async (req: Request, res: Response) => {
             }
         });
     } catch (error: any) {
+        console.error('Registration error:', error.message);
         res.status(500).json({ success: false, message: 'Server error: ' + error.message });
     }
 };
@@ -110,12 +152,22 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
-        // ✅ VENDOR APPROVAL CHECK
+        // Vendor approval check
         if (user.role === 'vendor' && user.approvalStatus !== 'approved') {
             return res.status(403).json({
                 success: false,
-                message: user.approvalStatus === 'pending' 
-                    ? '⏳ Your account is pending admin approval.' 
+                message: user.approvalStatus === 'pending'
+                    ? '⏳ Your account is pending admin approval.'
+                    : '❌ Your account has been rejected.'
+            });
+        }
+
+        // Rider approval check
+        if (user.role === 'rider' && user.approvalStatus !== 'approved') {
+            return res.status(403).json({
+                success: false,
+                message: user.approvalStatus === 'pending'
+                    ? '⏳ Your account is pending admin approval.'
                     : '❌ Your account has been rejected.'
             });
         }
@@ -140,18 +192,13 @@ export const login = async (req: Request, res: Response) => {
             }
         });
     } catch (error: any) {
+        console.error('Login error:', error.message);
         res.status(500).json({ success: false, message: 'Server error: ' + error.message });
     }
 };
 
 // ============================================
-// FORGOT PASSWORD (REAL EMAIL/OTP CONFIGURATION)
-// ============================================
-// ============================================
-// FORGOT PASSWORD (SECURE NODEMAILER CONFIG)
-// ============================================
-// ============================================
-// FORGOT PASSWORD (SECURE & ULTIMATE GMAIL)
+// FORGOT PASSWORD
 // ============================================
 export const forgotPassword = async (req: Request, res: Response) => {
     try {
@@ -165,21 +212,19 @@ export const forgotPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // Generate 6-Digit Code
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Gmail Direct Secure Transport Config
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             host: 'smtp.gmail.com',
             port: 465,
-            secure: true, // SSL Config
+            secure: true,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
             },
             tls: {
-                rejectUnauthorized: false // Local host blocks bypass karne k liye
+                rejectUnauthorized: false
             }
         });
 
@@ -218,8 +263,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
         });
     }
 };
+
 // ============================================
-// RESET PASSWORD (VERIFY & UPDATE DB)
+// RESET PASSWORD
 // ============================================
 export const resetPassword = async (req: Request, res: Response) => {
     try {
@@ -232,7 +278,6 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // 1. Database me user check karo
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ 
@@ -241,7 +286,6 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // 2. OTP Validation Check
         if (otp.length !== 6) {
             return res.status(400).json({ 
                 success: false, 
@@ -249,11 +293,9 @@ export const resetPassword = async (req: Request, res: Response) => {
             });
         }
 
-        // 3. New Password hashing process
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-        // 4. Update password on Database schema
         user.password = hashedPassword;
         await user.save();
 
@@ -263,6 +305,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         });
 
     } catch (error: any) {
+        console.error('Reset password error:', error.message);
         return res.status(500).json({ 
             success: false, 
             message: "Server error during password reset: " + error.message 

@@ -1,10 +1,18 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { register, login, forgotPassword, resetPassword } from './auth.controller.js'; // Updated Imports (Added resetPassword)
+import path from 'path';
+import {
+    register,
+    login,
+    forgotPassword,
+    resetPassword
+} from './auth.controller.js';
 
 const router = Router();
 
-// Multer configuration
+// ============================================
+// MULTER CONFIGURATION - FILE UPLOAD
+// ============================================
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, 'uploads/');
@@ -14,9 +22,9 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }
+    limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
 // ============================================
@@ -25,26 +33,23 @@ const upload = multer({
 
 // Test route
 router.get('/test', (req, res) => {
-    res.json({ 
-        success: true, 
-        message: '✅ Auth routes are working!',
-        timestamp: new Date().toISOString()
-    });
+    res.json({ success: true, message: '✅ Auth routes working!' });
 });
 
-// Register
+// Register with file upload (CNIC + Business License for vendors)
 router.post('/register', upload.fields([
     { name: 'cnicFront', maxCount: 1 },
-    { name: 'cnicBack', maxCount: 1 }
+    { name: 'cnicBack', maxCount: 1 },
+    { name: 'businessLicense', maxCount: 1 } // ✅ Business License - Optional
 ]), register);
 
 // Login
 router.post('/login', login);
 
-// Forgot Password (OTP Generation & Email Sending)
+// Forgot Password
 router.post('/forgot-password', forgotPassword);
 
-// Reset Password (OTP Verification & Database Update)
+// Reset Password
 router.post('/reset-password', resetPassword);
 
 export default router;

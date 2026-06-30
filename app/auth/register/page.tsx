@@ -21,17 +21,37 @@ export default function RegisterPage() {
     const [message, setMessage] = useState<Message | null>(null);
     const [selectedRole, setSelectedRole] = useState<string>('customer');
     
+    // ============================================
+    // COMMON FIELDS
+    // ============================================
     const [name, setName] = useState<string>('');
     const [email, setEmail] = useState<string>('');
     const [phone, setPhone] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     
+    // ============================================
+    // VENDOR FIELDS
+    // ============================================
     const [shopName, setShopName] = useState<string>('');
     const [shopAddress, setShopAddress] = useState<string>('');
+    
+    // ✅ New Optional Fields
+    const [ntnNumber, setNtnNumber] = useState<string>('');
+    const [businessLicense, setBusinessLicense] = useState<File | null>(null);
+    const [businessLicensePreview, setBusinessLicensePreview] = useState<string>('');
+    
     const [cnicFront, setCnicFront] = useState<File | null>(null);
     const [cnicBack, setCnicBack] = useState<File | null>(null);
     const [cnicFrontPreview, setCnicFrontPreview] = useState<string>('');
     const [cnicBackPreview, setCnicBackPreview] = useState<string>('');
+
+    // ============================================
+    // RIDER FIELDS
+    // ============================================
+    const [vehicleType, setVehicleType] = useState<string>('bike');
+    const [vehicleNumber, setVehicleNumber] = useState<string>('');
+    const [licenseNumber, setLicenseNumber] = useState<string>('');
+    const [zone, setZone] = useState<string>('Rawalpindi');
 
     const roles = [
         { id: 'vendor', label: '🏪 Vendor' },
@@ -39,6 +59,12 @@ export default function RegisterPage() {
         { id: 'rider', label: '🛵 Rider' }
     ];
 
+    const vehicleTypes = ['bike', 'car', 'van', 'cycle'];
+    const zones = ['Rawalpindi', 'Islamabad', 'Both'];
+
+    // ============================================
+    // FILE HANDLERS
+    // ============================================
     const handleCnicFrontChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -55,6 +81,15 @@ export default function RegisterPage() {
         }
     };
 
+    // ✅ Business License Handler
+    const handleBusinessLicenseChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setBusinessLicense(file);
+            setBusinessLicensePreview(URL.createObjectURL(file));
+        }
+    };
+
     const removeCnicFront = () => {
         setCnicFront(null);
         setCnicFrontPreview('');
@@ -65,6 +100,14 @@ export default function RegisterPage() {
         setCnicBackPreview('');
     };
 
+    const removeBusinessLicense = () => {
+        setBusinessLicense(null);
+        setBusinessLicensePreview('');
+    };
+
+    // ============================================
+    // SUBMIT HANDLER
+    // ============================================
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
@@ -78,9 +121,29 @@ export default function RegisterPage() {
             formData.append('password', password);
             formData.append('role', selectedRole);
 
+            // ============================================
+            // VENDOR FIELDS (With Optional NTN + Business License)
+            // ============================================
             if (selectedRole === 'vendor') {
                 formData.append('shopName', shopName);
                 formData.append('shopAddress', shopAddress);
+                
+                // ✅ Optional fields - only append if provided
+                if (ntnNumber) formData.append('ntnNumber', ntnNumber);
+                if (businessLicense) formData.append('businessLicense', businessLicense);
+                
+                if (cnicFront) formData.append('cnicFront', cnicFront);
+                if (cnicBack) formData.append('cnicBack', cnicBack);
+            }
+
+            // ============================================
+            // RIDER FIELDS
+            // ============================================
+            if (selectedRole === 'rider') {
+                formData.append('vehicleType', vehicleType);
+                formData.append('vehicleNumber', vehicleNumber);
+                formData.append('licenseNumber', licenseNumber);
+                formData.append('zone', zone);
                 if (cnicFront) formData.append('cnicFront', cnicFront);
                 if (cnicBack) formData.append('cnicBack', cnicBack);
             }
@@ -91,8 +154,7 @@ export default function RegisterPage() {
                 { headers: { 'Content-Type': 'multipart/form-data' } }
             );
 
-            // ✅ Show approval message for vendors
-            if (selectedRole === 'vendor') {
+            if (selectedRole === 'vendor' || selectedRole === 'rider') {
                 setMessage({ 
                     type: 'success', 
                     text: '✅ Registration successful! Your account is pending admin approval. You will be notified once approved.' 
@@ -117,6 +179,7 @@ export default function RegisterPage() {
     };
 
     const isVendor = selectedRole === 'vendor';
+    const isRider = selectedRole === 'rider';
 
     return (
         <div className={styles.container}>
@@ -132,6 +195,9 @@ export default function RegisterPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className={styles.form}>
+                    {/* ============================================
+                        ROLE SELECTION
+                    ============================================ */}
                     <div className={styles.roleSection}>
                         <label className={styles.roleLabel}>I want to register as:</label>
                         <div className={styles.roleGroup}>
@@ -150,6 +216,9 @@ export default function RegisterPage() {
 
                     <div className={styles.divider}></div>
 
+                    {/* ============================================
+                        COMMON FIELDS
+                    ============================================ */}
                     <div className={styles.fieldGroup}>
                         <label className={styles.fieldLabel}>Full Name</label>
                         <input
@@ -198,6 +267,9 @@ export default function RegisterPage() {
                         />
                     </div>
 
+                    {/* ============================================
+                        VENDOR FIELDS
+                    ============================================ */}
                     {isVendor && (
                         <div className={styles.vendorSection}>
                             <h3 className={styles.sectionTitle}>🏪 Shop Information</h3>
@@ -224,6 +296,192 @@ export default function RegisterPage() {
                                     className={styles.textarea}
                                     rows={3}
                                 />
+                            </div>
+
+                            {/* ============================================
+                                OPTIONAL FIELDS (NTN + Business License)
+                            ============================================ */}
+                            <div className={styles.sectionTitle}>📋 Business Documents</div>
+                            <p className={styles.uploadHint}>These fields are optional. You can skip them.</p>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.fieldLabel}>NTN Number <span style={{ color: '#6c757d', fontWeight: 400 }}>(Optional)</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter NTN number (optional)"
+                                    value={ntnNumber}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setNtnNumber(e.target.value)}
+                                    className={styles.input}
+                                />
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.fieldLabel}>Business License <span style={{ color: '#6c757d', fontWeight: 400 }}>(Optional)</span></label>
+                                <div className={styles.uploadBox}>
+                                    <label className={styles.uploadLabel} style={{ padding: '15px 10px' }}>
+                                        <span className={styles.uploadIcon}>📄</span>
+                                        Upload Business License (Optional)
+                                        <input
+                                            type="file"
+                                            accept="image/*,.pdf"
+                                            onChange={handleBusinessLicenseChange}
+                                            className={styles.uploadInput}
+                                        />
+                                    </label>
+                                    {businessLicensePreview && (
+                                        <div className={styles.previewContainer}>
+                                            <picture>
+                                                <source srcSet={businessLicensePreview} />
+                                                <img 
+                                                    src={businessLicensePreview} 
+                                                    alt="Business License" 
+                                                    className={styles.previewImage} 
+                                                />
+                                            </picture>
+                                            <button 
+                                                type="button" 
+                                                onClick={removeBusinessLicense}
+                                                className={styles.removeBtn}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className={styles.sectionTitle}>📄 CNIC Upload</div>
+                            <p className={styles.uploadHint}>Please upload clear images of your CNIC (Front & Back)</p>
+
+                            <div className={styles.uploadGroup}>
+                                <div className={styles.uploadBox}>
+                                    <label className={styles.uploadLabel}>
+                                        <span className={styles.uploadIcon}>📷</span>
+                                        CNIC Front
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleCnicFrontChange}
+                                            required
+                                            className={styles.uploadInput}
+                                        />
+                                    </label>
+                                    {cnicFrontPreview && (
+                                        <div className={styles.previewContainer}>
+                                            <picture>
+                                                <source srcSet={cnicFrontPreview} />
+                                                <img 
+                                                    src={cnicFrontPreview} 
+                                                    alt="CNIC Front" 
+                                                    className={styles.previewImage} 
+                                                />
+                                            </picture>
+                                            <button 
+                                                type="button" 
+                                                onClick={removeCnicFront}
+                                                className={styles.removeBtn}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className={styles.uploadBox}>
+                                    <label className={styles.uploadLabel}>
+                                        <span className={styles.uploadIcon}>📷</span>
+                                        CNIC Back
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleCnicBackChange}
+                                            required
+                                            className={styles.uploadInput}
+                                        />
+                                    </label>
+                                    {cnicBackPreview && (
+                                        <div className={styles.previewContainer}>
+                                            <picture>
+                                                <source srcSet={cnicBackPreview} />
+                                                <img 
+                                                    src={cnicBackPreview} 
+                                                    alt="CNIC Back" 
+                                                    className={styles.previewImage} 
+                                                />
+                                            </picture>
+                                            <button 
+                                                type="button" 
+                                                onClick={removeCnicBack}
+                                                className={styles.removeBtn}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ============================================
+                        RIDER FIELDS
+                    ============================================ */}
+                    {isRider && (
+                        <div className={styles.vendorSection}>
+                            <h3 className={styles.sectionTitle}>🛵 Rider Information</h3>
+                            
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.fieldLabel}>Vehicle Type</label>
+                                <select
+                                    value={vehicleType}
+                                    onChange={(e) => setVehicleType(e.target.value)}
+                                    className={styles.select}
+                                    required
+                                >
+                                    {vehicleTypes.map((type) => (
+                                        <option key={type} value={type}>
+                                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.fieldLabel}>Vehicle Number</label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g., RIV-1234"
+                                    value={vehicleNumber}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setVehicleNumber(e.target.value)}
+                                    required
+                                    className={styles.input}
+                                />
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.fieldLabel}>License Number</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter your driving license number"
+                                    value={licenseNumber}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setLicenseNumber(e.target.value)}
+                                    required
+                                    className={styles.input}
+                                />
+                            </div>
+
+                            <div className={styles.fieldGroup}>
+                                <label className={styles.fieldLabel}>Delivery Zone</label>
+                                <select
+                                    value={zone}
+                                    onChange={(e) => setZone(e.target.value)}
+                                    className={styles.select}
+                                    required
+                                >
+                                    {zones.map((z) => (
+                                        <option key={z} value={z}>{z}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className={styles.sectionTitle}>📄 CNIC Upload</div>

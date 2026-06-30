@@ -13,6 +13,14 @@ export interface IUser extends Document {
     shopAddress?: string;
     cnicFront?: string;
     cnicBack?: string;
+    // ✅ New Optional Fields
+    ntnNumber?: string;
+    businessLicense?: string;
+    // Rider fields
+    vehicleType?: 'bike' | 'car' | 'van' | 'cycle';
+    vehicleNumber?: string;
+    licenseNumber?: string;
+    zone?: string;
 }
 
 const UserSchema: Schema = new Schema({
@@ -32,10 +40,23 @@ const UserSchema: Schema = new Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'approved'
     },
+    // Vendor fields
     shopName: { type: String },
     shopAddress: { type: String },
     cnicFront: { type: String },
-    cnicBack: { type: String }
+    cnicBack: { type: String },
+    // ✅ New Optional Fields
+    ntnNumber: { type: String },
+    businessLicense: { type: String },
+    // Rider fields
+    vehicleType: {
+        type: String,
+        enum: ['bike', 'car', 'van', 'cycle'],
+        default: 'bike'
+    },
+    vehicleNumber: { type: String },
+    licenseNumber: { type: String },
+    zone: { type: String, default: 'Rawalpindi' }
 }, {
     timestamps: true
 });
