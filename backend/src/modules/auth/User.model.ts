@@ -13,9 +13,20 @@ export interface IUser extends Document {
     shopAddress?: string;
     cnicFront?: string;
     cnicBack?: string;
-    // ✅ New Optional Fields
     ntnNumber?: string;
     businessLicense?: string;
+    // ✅ SUBSCRIPTION FIELDS
+    totalEarnings: number;
+    availableBalance: number;
+    pendingWithdrawals: number;
+    totalOrdersCount: number;
+    subscriptionPlan: 'free' | 'monthly' | 'yearly';
+    subscriptionStatus: 'active' | 'inactive' | 'pending_approval' | 'expired';
+    subscriptionExpiryDate?: Date;
+    trialStartDate?: Date;
+    trialEndDate?: Date;
+    hasRequestedExtension: boolean;
+    extensionRequestDate?: Date | null;
     // Rider fields
     vehicleType?: 'bike' | 'car' | 'van' | 'cycle';
     vehicleNumber?: string;
@@ -27,7 +38,7 @@ const UserSchema: Schema = new Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    phone: { type: String, required: true },
+    phone: { type: String, default: '' },
     role: {
         type: String,
         enum: ['admin', 'vendor', 'customer', 'rider'],
@@ -38,24 +49,43 @@ const UserSchema: Schema = new Schema({
     approvalStatus: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],
-        default: 'approved'
+        default: 'pending'
     },
     // Vendor fields
-    shopName: { type: String },
-    shopAddress: { type: String },
-    cnicFront: { type: String },
-    cnicBack: { type: String },
-    // ✅ New Optional Fields
-    ntnNumber: { type: String },
-    businessLicense: { type: String },
+    shopName: { type: String, default: '' },
+    shopAddress: { type: String, default: '' },
+    cnicFront: { type: String, default: '' },
+    cnicBack: { type: String, default: '' },
+    ntnNumber: { type: String, default: '' },
+    businessLicense: { type: String, default: '' },
+    // ✅ SUBSCRIPTION FIELDS
+    totalEarnings: { type: Number, default: 0, min: 0 },
+    availableBalance: { type: Number, default: 0, min: 0 },
+    pendingWithdrawals: { type: Number, default: 0, min: 0 },
+    totalOrdersCount: { type: Number, default: 0, min: 0 },
+    subscriptionPlan: {
+        type: String,
+        enum: ['free', 'monthly', 'yearly'],
+        default: 'free'
+    },
+    subscriptionStatus: {
+        type: String,
+        enum: ['active', 'inactive', 'pending_approval', 'expired'],
+        default: 'active'
+    },
+    subscriptionExpiryDate: { type: Date, default: null },
+    trialStartDate: { type: Date, default: null },
+    trialEndDate: { type: Date, default: null },
+    hasRequestedExtension: { type: Boolean, default: false },
+    extensionRequestDate: { type: Date, default: null },
     // Rider fields
     vehicleType: {
         type: String,
         enum: ['bike', 'car', 'van', 'cycle'],
         default: 'bike'
     },
-    vehicleNumber: { type: String },
-    licenseNumber: { type: String },
+    vehicleNumber: { type: String, default: '' },
+    licenseNumber: { type: String, default: '' },
     zone: { type: String, default: 'Rawalpindi' }
 }, {
     timestamps: true

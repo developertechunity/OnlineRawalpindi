@@ -76,7 +76,8 @@ interface StoreHours {
     [key: string]: { open: string; close: string };
 }
 
-const API_BASE = 'http://localhost:5002/api/vendor';
+// ✅ FIXED: Correct API_BASE
+const API_BASE = 'http://localhost:5002/api/auth/vendor';
 
 export default function VendorDashboardPage() {
     const router = useRouter();
@@ -158,7 +159,7 @@ export default function VendorDashboardPage() {
     const [showExtensionModal, setShowExtensionModal] = useState(false);
     const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-    // ✅ SELECTED PRODUCT STATE - Top level pe
+    // ✅ SELECTED PRODUCT STATE
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
     // File input ref for clearing
@@ -265,7 +266,7 @@ export default function VendorDashboardPage() {
     }, [router, fetchDashboardData]);
 
     // ============================================
-    // ADD PRODUCT - WITH IMAGE VALIDATION
+    // ADD PRODUCT
     // ============================================
     const handleAddProductSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -276,19 +277,16 @@ export default function VendorDashboardPage() {
             return;
         }
 
-        // ✅ Validate required fields
         if (!productForm.name || !productForm.price || !productForm.stock || !productForm.description) {
             showToast('Please fill all required fields (Name, Price, Stock, Description)', 'error');
             return;
         }
 
-        // ✅ Validate at least 1 image
         if (productForm.images.length === 0) {
             showToast('⚠️ Please upload at least 1 product image', 'error');
             return;
         }
 
-        // ✅ Validate max 5 images
         if (productForm.images.length > 5) {
             showToast('Maximum 5 images allowed', 'error');
             return;
@@ -342,7 +340,6 @@ export default function VendorDashboardPage() {
             }
         } catch (error: any) {
             console.error('❌ Add product error:', error);
-            console.error('❌ Response data:', error.response?.data);
             showToast(error.response?.data?.message || 'Failed to add product', 'error');
         }
     };
@@ -484,79 +481,80 @@ export default function VendorDashboardPage() {
         }
     };
 
- const handleWithdrawalSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
-    
-    if (!token) {
-        showToast('Session expired. Please login again.', 'error');
-        return;
-    }
-
-    const amount = Number(withdrawalForm.amount);
-    
-    // ✅ Validation
-    if (amount <= 0) {
-        showToast('Please enter a valid amount', 'error');
-        return;
-    }
-
-    if (amount < 5000) {
-        showToast('Minimum withdrawal amount is PKR 5,000', 'error');
-        return;
-    }
-
-    if (amount > 1000000) {
-        showToast('Maximum withdrawal amount is PKR 1,000,000 (1 Million)', 'error');
-        return;
-    }
-
-    if (amount > summary.availableBalance) {
-        showToast(`Insufficient balance. Available: PKR ${summary.availableBalance.toLocaleString()}`, 'error');
-        return;
-    }
-
-    if (!withdrawalForm.accountNumber || withdrawalForm.accountNumber.length < 6) {
-        showToast('Please enter a valid account number', 'error');
-        return;
-    }
-
-    if (!withdrawalForm.accountHolderName || withdrawalForm.accountHolderName.length < 2) {
-        showToast('Please enter account holder name', 'error');
-        return;
-    }
-
-    try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await axios.post(`${API_BASE}/withdrawal/request`, {
-            amount: withdrawalForm.amount,
-            method: withdrawalForm.method,
-            accountNumber: withdrawalForm.accountNumber,
-            accountHolderName: withdrawalForm.accountHolderName
-        }, config);
-
-        if (response.data.success) {
-            showToast('✅ Withdrawal request sent successfully! Admin will review and process.', 'success');
-            setShowWithdrawalModal(false);
-            setWithdrawalForm({
-                amount: '',
-                method: 'easypaisa',
-                accountNumber: '',
-                accountHolderName: ''
-            });
-            await fetchDashboardData();
+    // ============================================
+    // WITHDRAWAL
+    // ============================================
+    const handleWithdrawalSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            showToast('Session expired. Please login again.', 'error');
+            return;
         }
-    } catch (error: any) {
-        console.error('Withdrawal error:', error);
-        const errorMessage = error.response?.data?.message || 'Failed to submit withdrawal request';
-        showToast(errorMessage, 'error');
-    }
-};
+
+        const amount = Number(withdrawalForm.amount);
+        
+        if (amount <= 0) {
+            showToast('Please enter a valid amount', 'error');
+            return;
+        }
+
+        if (amount < 5000) {
+            showToast('Minimum withdrawal amount is PKR 5,000', 'error');
+            return;
+        }
+
+        if (amount > 1000000) {
+            showToast('Maximum withdrawal amount is PKR 1,000,000 (1 Million)', 'error');
+            return;
+        }
+
+        if (amount > summary.availableBalance) {
+            showToast(`Insufficient balance. Available: PKR ${summary.availableBalance.toLocaleString()}`, 'error');
+            return;
+        }
+
+        if (!withdrawalForm.accountNumber || withdrawalForm.accountNumber.length < 6) {
+            showToast('Please enter a valid account number', 'error');
+            return;
+        }
+
+        if (!withdrawalForm.accountHolderName || withdrawalForm.accountHolderName.length < 2) {
+            showToast('Please enter account holder name', 'error');
+            return;
+        }
+
+        try {
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const response = await axios.post(`${API_BASE}/withdrawal/request`, {
+                amount: withdrawalForm.amount,
+                method: withdrawalForm.method,
+                accountNumber: withdrawalForm.accountNumber,
+                accountHolderName: withdrawalForm.accountHolderName
+            }, config);
+
+            if (response.data.success) {
+                showToast('✅ Withdrawal request sent successfully! Admin will review and process.', 'success');
+                setShowWithdrawalModal(false);
+                setWithdrawalForm({
+                    amount: '',
+                    method: 'easypaisa',
+                    accountNumber: '',
+                    accountHolderName: ''
+                });
+                await fetchDashboardData();
+            }
+        } catch (error: any) {
+            console.error('Withdrawal error:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to submit withdrawal request';
+            showToast(errorMessage, 'error');
+        }
+    };
 
     // ============================================
-    // SUBSCRIPTION HANDLERS
+    // ✅ SUBSCRIPTION HANDLERS - FIXED
     // ============================================
-    
     const handleStartFreeTrial = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -565,16 +563,20 @@ export default function VendorDashboardPage() {
         }
 
         try {
+            console.log('📋 Starting free trial...');
             const config = { headers: { Authorization: `Bearer ${token}` } };
             const response = await axios.post(`${API_BASE}/subscription/start-trial`, {}, config);
+
+            console.log('📋 Response:', response.data);
 
             if (response.data.success) {
                 showToast('✅ Free trial started successfully! You have 30 days.', 'success');
                 await fetchDashboardData();
             }
         } catch (error: any) {
-            console.error('Start trial error:', error);
-            showToast(error.response?.data?.message || 'Failed to start trial', 'error');
+            console.error('❌ Start trial error:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to start trial';
+            showToast(errorMessage, 'error');
         }
     };
 
@@ -588,6 +590,7 @@ export default function VendorDashboardPage() {
         }
 
         try {
+            console.log('📋 Cancelling subscription request...');
             const config = { headers: { Authorization: `Bearer ${token}` } };
             const response = await axios.post(`${API_BASE}/subscription/cancel-request`, {}, config);
 
@@ -596,8 +599,9 @@ export default function VendorDashboardPage() {
                 await fetchDashboardData();
             }
         } catch (error: any) {
-            console.error('Cancel subscription error:', error);
-            showToast(error.response?.data?.message || 'Failed to cancel request', 'error');
+            console.error('❌ Cancel subscription error:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to cancel request';
+            showToast(errorMessage, 'error');
         }
     };
 
@@ -609,16 +613,20 @@ export default function VendorDashboardPage() {
         }
 
         try {
+            console.log(`📋 Subscribing to ${plan} plan...`);
             const config = { headers: { Authorization: `Bearer ${token}` } };
             const response = await axios.post(`${API_BASE}/subscription/upgrade`, { plan }, config);
+
+            console.log('📋 Response:', response.data);
 
             if (response.data.success) {
                 showToast('✅ Subscription request sent for admin approval!', 'success');
                 await fetchDashboardData();
             }
         } catch (error: any) {
-            console.error('Subscription error:', error);
-            showToast(error.response?.data?.message || 'Failed to process subscription', 'error');
+            console.error('❌ Subscription error:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to process subscription';
+            showToast(errorMessage, 'error');
         }
     };
 
@@ -630,6 +638,7 @@ export default function VendorDashboardPage() {
         }
 
         try {
+            console.log('📋 Requesting trial extension...');
             const config = { headers: { Authorization: `Bearer ${token}` } };
             const response = await axios.post(`${API_BASE}/subscription/extend-trial`, {}, config);
 
@@ -639,8 +648,9 @@ export default function VendorDashboardPage() {
                 await fetchDashboardData();
             }
         } catch (error: any) {
-            console.error('Extension request error:', error);
-            showToast(error.response?.data?.message || 'Failed to request extension', 'error');
+            console.error('❌ Extension request error:', error);
+            const errorMessage = error.response?.data?.message || 'Failed to request extension';
+            showToast(errorMessage, 'error');
         }
     };
 
@@ -683,113 +693,113 @@ export default function VendorDashboardPage() {
         if (tab === 'employees') fetchEmployees();
     }, [fetchProducts, fetchEmployees]);
 
-   const renderWithdrawalModal = () => {
-    if (!showWithdrawalModal) return null;
+    // ============================================
+    // RENDER MODALS
+    // ============================================
+    const renderWithdrawalModal = () => {
+        if (!showWithdrawalModal) return null;
 
-    return (
-        <div className={styles.modalOverlay} onClick={() => setShowWithdrawalModal(false)}>
-            <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-                <div className={styles.modalHeader}>
-                    <h3 className={styles.modalTitle}>💰 Request Withdrawal</h3>
-                    <button className={styles.modalClose} onClick={() => setShowWithdrawalModal(false)}>×</button>
-                </div>
-                
-                <form onSubmit={handleWithdrawalSubmit}>
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Available Balance</label>
-                        <div style={{ 
-                            fontSize: '22px', 
-                            fontWeight: 'bold', 
-                            color: '#4a6cf7',
-                            padding: '10px',
-                            background: '#f0f4ff',
-                            borderRadius: '8px',
-                            textAlign: 'center'
-                        }}>
-                            PKR {summary.availableBalance.toLocaleString()}
+        return (
+            <div className={styles.modalOverlay} onClick={() => setShowWithdrawalModal(false)}>
+                <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                    <div className={styles.modalHeader}>
+                        <h3 className={styles.modalTitle}>💰 Request Withdrawal</h3>
+                        <button className={styles.modalClose} onClick={() => setShowWithdrawalModal(false)}>×</button>
+                    </div>
+                    
+                    <form onSubmit={handleWithdrawalSubmit}>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Available Balance</label>
+                            <div style={{ 
+                                fontSize: '22px', 
+                                fontWeight: 'bold', 
+                                color: '#4a6cf7',
+                                padding: '10px',
+                                background: '#f0f4ff',
+                                borderRadius: '8px',
+                                textAlign: 'center'
+                            }}>
+                                PKR {summary.availableBalance.toLocaleString()}
+                            </div>
                         </div>
-                    </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Amount (PKR) *</label>
-                        <input
-                            type="number"
-                            className={styles.formInput}
-                            placeholder="Enter amount to withdraw"
-                            value={withdrawalForm.amount}
-                            onChange={(e) => setWithdrawalForm({...withdrawalForm, amount: e.target.value})}
-                            min="5000"      // ✅ Minimum 5000
-                            max="1000000"   // ✅ Maximum 1,000,000 (1 Million)
-                            required
-                        />
-                        <small style={{ color: '#6c757d', display: 'block', marginTop: '4px' }}>
-                            Minimum: PKR 5,000 | Maximum: PKR 1,000,000 (1 Million)
-                        </small>
-                    </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Amount (PKR) *</label>
+                            <input
+                                type="number"
+                                className={styles.formInput}
+                                placeholder="Enter amount to withdraw"
+                                value={withdrawalForm.amount}
+                                onChange={(e) => setWithdrawalForm({...withdrawalForm, amount: e.target.value})}
+                                min="5000"
+                                max="1000000"
+                                required
+                            />
+                            <small style={{ color: '#6c757d', display: 'block', marginTop: '4px' }}>
+                                Minimum: PKR 5,000 | Maximum: PKR 1,000,000 (1 Million)
+                            </small>
+                        </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Payment Method *</label>
-                        <select
-                            className={styles.formSelect}
-                            value={withdrawalForm.method}
-                            onChange={(e) => setWithdrawalForm({...withdrawalForm, method: e.target.value as any})}
-                            required
-                        >
-                            <option value="easypaisa">💳 EasyPaisa</option>
-                            <option value="jazzcash">💳 JazzCash</option>
-                            <option value="bank">🏦 Bank Account</option>
-                        </select>
-                    </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Payment Method *</label>
+                            <select
+                                className={styles.formSelect}
+                                value={withdrawalForm.method}
+                                onChange={(e) => setWithdrawalForm({...withdrawalForm, method: e.target.value as any})}
+                                required
+                            >
+                                <option value="easypaisa">💳 EasyPaisa</option>
+                                <option value="jazzcash">💳 JazzCash</option>
+                                <option value="bank">🏦 Bank Account</option>
+                            </select>
+                        </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>
-                            {withdrawalForm.method === 'easypaisa' ? 'EasyPaisa Number *' :
-                             withdrawalForm.method === 'jazzcash' ? 'JazzCash Number *' :
-                             'Bank Account Number *'}
-                        </label>
-                        <input
-                            type="text"
-                            className={styles.formInput}
-                            placeholder={
-                                withdrawalForm.method === 'easypaisa' ? '03XX-XXXXXXX' :
-                                withdrawalForm.method === 'jazzcash' ? '03XX-XXXXXXX' :
-                                'IBAN or Account Number'
-                            }
-                            value={withdrawalForm.accountNumber}
-                            onChange={(e) => setWithdrawalForm({...withdrawalForm, accountNumber: e.target.value})}
-                            required
-                        />
-                    </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>
+                                {withdrawalForm.method === 'easypaisa' ? 'EasyPaisa Number *' :
+                                 withdrawalForm.method === 'jazzcash' ? 'JazzCash Number *' :
+                                 'Bank Account Number *'}
+                            </label>
+                            <input
+                                type="text"
+                                className={styles.formInput}
+                                placeholder={
+                                    withdrawalForm.method === 'easypaisa' ? '03XX-XXXXXXX' :
+                                    withdrawalForm.method === 'jazzcash' ? '03XX-XXXXXXX' :
+                                    'IBAN or Account Number'
+                                }
+                                value={withdrawalForm.accountNumber}
+                                onChange={(e) => setWithdrawalForm({...withdrawalForm, accountNumber: e.target.value})}
+                                required
+                            />
+                        </div>
 
-                    <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Account Holder Name *</label>
-                        <input
-                            type="text"
-                            className={styles.formInput}
-                            placeholder="Full name as per bank/account"
-                            value={withdrawalForm.accountHolderName}
-                            onChange={(e) => setWithdrawalForm({...withdrawalForm, accountHolderName: e.target.value})}
-                            required
-                        />
-                    </div>
+                        <div className={styles.formGroup}>
+                            <label className={styles.formLabel}>Account Holder Name *</label>
+                            <input
+                                type="text"
+                                className={styles.formInput}
+                                placeholder="Full name as per bank/account"
+                                value={withdrawalForm.accountHolderName}
+                                onChange={(e) => setWithdrawalForm({...withdrawalForm, accountHolderName: e.target.value})}
+                                required
+                            />
+                        </div>
 
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                        <button type="submit" className={styles.primaryBtn} style={{ flex: 1 }}>
-                            📤 Submit Request
-                        </button>
-                        <button type="button" className={styles.secondaryBtn} onClick={() => setShowWithdrawalModal(false)}>
-                            Cancel
-                        </button>
-                    </div>
-                </form>
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                            <button type="submit" className={styles.primaryBtn} style={{ flex: 1 }}>
+                                📤 Submit Request
+                            </button>
+                            <button type="button" className={styles.secondaryBtn} onClick={() => setShowWithdrawalModal(false)}>
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    };
 
-    // ============================================
-    // ADD PRODUCT MODAL
-    // ============================================
     const renderAddProductModal = () => {
         if (!showAddProduct) return null;
 
@@ -853,7 +863,7 @@ export default function VendorDashboardPage() {
                             />
                         </div>
 
-                        {/* Product Images - REQUIRED */}
+                        {/* Product Images */}
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>
                                 Product Images <span style={{ color: '#dc3545', fontSize: '12px' }}>* (Required, Max 5)</span>
@@ -936,7 +946,7 @@ export default function VendorDashboardPage() {
                             )}
                         </div>
 
-                        {/* Colors - OPTIONAL */}
+                        {/* Colors */}
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>
                                 Colors <span style={{ color: '#6c757d', fontSize: '12px' }}>(Optional)</span>
@@ -990,7 +1000,7 @@ export default function VendorDashboardPage() {
                             </div>
                         </div>
 
-                        {/* Sizes - OPTIONAL */}
+                        {/* Sizes */}
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>
                                 Sizes <span style={{ color: '#6c757d', fontSize: '12px' }}>(Optional)</span>
@@ -1363,10 +1373,9 @@ export default function VendorDashboardPage() {
     };
 
     // ============================================
-    // ✅ RENDER PRODUCTS - WITH IMAGE ERROR HANDLING
+    // RENDER PRODUCTS
     // ============================================
     const renderProducts = () => {
-        // Function to handle image load error
         const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
             const img = e.currentTarget;
             img.style.display = 'none';
@@ -1619,55 +1628,56 @@ export default function VendorDashboardPage() {
     );
 
     const renderEmployees = () => (
-    <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>👥 Employees</h2>
-        <button className={styles.primaryBtn} onClick={() => setShowAddEmployee(true)}>+ Add Employee</button>
-        <div style={{ marginTop: '20px' }}>
-            {employees.length > 0 ? employees.map((employee) => (
-                <div key={employee.id} className={styles.employeeItem}>
-                    <div className={styles.employeeInfo}>
-                        <span className={styles.employeeName}>{employee.name}</span>
-                        <span className={styles.employeeRole}>{employee.role} • {employee.email}</span>
+        <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>👥 Employees</h2>
+            <button className={styles.primaryBtn} onClick={() => setShowAddEmployee(true)}>+ Add Employee</button>
+            <div style={{ marginTop: '20px' }}>
+                {employees.length > 0 ? employees.map((employee) => (
+                    <div key={employee.id} className={styles.employeeItem}>
+                        <div className={styles.employeeInfo}>
+                            <span className={styles.employeeName}>{employee.name}</span>
+                            <span className={styles.employeeRole}>{employee.role} • {employee.email}</span>
+                        </div>
+                        <button className={styles.dangerBtn} onClick={() => handleDeleteEmployee(employee.id)}>
+                            Remove
+                        </button>
                     </div>
-                    <button className={styles.dangerBtn} onClick={() => handleDeleteEmployee(employee.id)}>
-                        Remove
-                    </button>
-                </div>
-            )) : (
-                <p className={styles.textMuted}>No employees registered yet.</p>
-            )}
+                )) : (
+                    <p className={styles.textMuted}>No employees registered yet.</p>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
 
-  const renderStoreHours = () => (
-    <div className={styles.section}>
-        <h2 className={styles.sectionTitle}>🕐 Store Hours</h2>
-        <div className={styles.hoursGrid}>
-            {Object.entries(storeHours).map(([day, hours]) => (
-                <div key={day} className={styles.hoursRow}>
-                    <span className={styles.hoursDay}>{day}</span>
-                    <input 
-                        type="time" 
-                        className={styles.hoursInput} 
-                        value={hours.open} 
-                        onChange={(e) => handleStoreHoursChange(day, 'open', e.target.value)} 
-                    />
-                    <span className={styles.hoursSeparator}>to</span>
-                    <input 
-                        type="time" 
-                        className={styles.hoursInput} 
-                        value={hours.close} 
-                        onChange={(e) => handleStoreHoursChange(day, 'close', e.target.value)} 
-                    />
-                </div>
-            ))}
+    const renderStoreHours = () => (
+        <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>🕐 Store Hours</h2>
+            <div className={styles.hoursGrid}>
+                {Object.entries(storeHours).map(([day, hours]) => (
+                    <div key={day} className={styles.hoursRow}>
+                        <span className={styles.hoursDay}>{day}</span>
+                        <input 
+                            type="time" 
+                            className={styles.hoursInput} 
+                            value={hours.open} 
+                            onChange={(e) => handleStoreHoursChange(day, 'open', e.target.value)} 
+                        />
+                        <span className={styles.hoursSeparator}>to</span>
+                        <input 
+                            type="time" 
+                            className={styles.hoursInput} 
+                            value={hours.close} 
+                            onChange={(e) => handleStoreHoursChange(day, 'close', e.target.value)} 
+                        />
+                    </div>
+                ))}
+            </div>
+            <button className={styles.successBtn} onClick={handleSaveStoreHours}>
+                Save Hours
+            </button>
         </div>
-        <button className={styles.successBtn} onClick={handleSaveStoreHours}>
-            Save Hours
-        </button>
-    </div>
-);
+    );
+
     // ============================================
     // MAIN RENDER
     // ============================================

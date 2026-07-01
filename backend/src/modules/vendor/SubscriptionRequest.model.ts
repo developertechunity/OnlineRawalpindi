@@ -14,10 +14,10 @@ export interface ISubscriptionRequest extends Document {
 }
 
 const SubscriptionRequestSchema: Schema = new Schema({
-    vendorId: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
+    vendorId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
     vendorName: { type: String, required: true },
     shopName: { type: String, required: true },
@@ -26,8 +26,8 @@ const SubscriptionRequestSchema: Schema = new Schema({
         enum: ['monthly', 'yearly'],
         required: true
     },
-    amount: { 
-        type: Number, 
+    amount: {
+        type: Number,
         required: true,
         default: function(this: any) {
             return this.planType === 'monthly' ? 1000 : 10000;
@@ -38,14 +38,14 @@ const SubscriptionRequestSchema: Schema = new Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
-    approvedBy: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User' 
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     },
     approvedAt: { type: Date },
     rejectedReason: { type: String }
-}, { 
-    timestamps: true 
+}, {
+    timestamps: true
 });
 
 export default mongoose.model<ISubscriptionRequest>('SubscriptionRequest', SubscriptionRequestSchema);

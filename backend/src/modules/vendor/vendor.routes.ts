@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { protect } from '../auth/auth.middleware.js';
-import { upload } from './vendor.middleware.js';  // ✅ Import upload
+import { upload } from './vendor.middleware.js';
 import {
     getVendorDashboardData,
     getProducts,
@@ -16,18 +16,28 @@ import {
     getTrialStatus,
     startFreeTrial,
     cancelSubscriptionRequest,
-    requestWithdrawal,         
-    getWithdrawalHistory    
+    requestWithdrawal,
+    getWithdrawalHistory
 } from './vendor.controller.js';
 
 const router = express.Router();
 
 // =========================================================
-// ✅ TEST ROUTE
+// ✅ MIDDLEWARE: Extract userId from req.user
+// =========================================================
+const setUserId = (req: any, res: any, next: any) => {
+    if (req.user) {
+        req.userId = req.user._id || req.user.id;
+    }
+    next();
+};
+
+// =========================================================
+// ✅ TEST ROUTE - Check if vendor routes work
 // =========================================================
 router.get('/test', (req, res) => {
-    res.json({ 
-        success: true, 
+    res.json({
+        success: true,
         message: '✅ Vendor routes are working!',
         timestamp: new Date().toISOString()
     });
@@ -38,25 +48,27 @@ router.get('/test', (req, res) => {
 // =========================================================
 
 // ---------- DASHBOARD ----------
-router.get('/dashboard-summary', protect, getVendorDashboardData);
-router.get('/trial-status', protect, getTrialStatus);
+router.get('/dashboard-summary', protect, setUserId, getVendorDashboardData);
+router.get('/trial-status', protect, setUserId, getTrialStatus);
 
 // ---------- PRODUCTS ----------
-router.get('/products', protect, getProducts);
-router.post('/products/add', protect, upload.array('images', 5), addProduct);  // ✅ Added upload middleware
-router.delete('/products/:productId', protect, deleteProduct);
+router.get('/products', protect, setUserId, getProducts);
+router.post('/products/add', protect, setUserId, upload.array('images', 5), addProduct);
+router.delete('/products/:productId', protect, setUserId, deleteProduct);
 
 // ---------- EMPLOYEES ----------
-router.get('/employees', protect, getEmployees);
-router.post('/employees/add', protect, addEmployee);
-router.delete('/employees/:employeeId', protect, deleteEmployee);
+router.get('/employees', protect, setUserId, getEmployees);
+router.post('/employees/add', protect, setUserId, addEmployee);
+router.delete('/employees/:employeeId', protect, setUserId, deleteEmployee);
 
-router.post('/withdrawal/request', protect, requestWithdrawal);
-router.get('/withdrawal/history', protect, getWithdrawalHistory);
+// ---------- WITHDRAWAL ----------
+router.post('/withdrawal/request', protect, setUserId, requestWithdrawal);
+router.get('/withdrawal/history', protect, setUserId, getWithdrawalHistory);
+
 // ---------- SUBSCRIPTION ----------
-router.post('/subscription/start-trial', protect, startFreeTrial);
-router.post('/subscription/upgrade', protect, upgradeSubscriptionRequest);
-router.post('/subscription/cancel-request', protect, cancelSubscriptionRequest);
-router.post('/subscription/extend-trial', protect, requestTrialExtension);
+router.post('/subscription/start-trial', protect, setUserId, startFreeTrial);
+router.post('/subscription/upgrade', protect, setUserId, upgradeSubscriptionRequest);
+router.post('/subscription/cancel-request', protect, setUserId, cancelSubscriptionRequest);
+router.post('/subscription/extend-trial', protect, setUserId, requestTrialExtension);
 
 export default router;

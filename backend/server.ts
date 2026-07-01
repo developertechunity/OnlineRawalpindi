@@ -1,63 +1,72 @@
-// backend/server.ts
-
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
-<<<<<<< Updated upstream
-import path from 'path';  // ✅ Add this
-import { fileURLToPath } from 'url';  // ✅ Add this
-import authRoutes from './src/modules/auth/auth.routes.js';
-import adminRoutes from './src/modules/admin/admin.routes.js';
-import vendorRoutes from './src/modules/vendor/vendor.routes.js';
-
-// ✅ For __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-=======
 import path from 'path';
 import authRoutes from './src/modules/auth/auth.routes.js';
 import adminRoutes from './src/modules/admin/admin.routes.js';
 import riderRoutes from './src/modules/rider/rider.routes.js';
->>>>>>> Stashed changes
+import vendorRoutes from './src/modules/vendor/vendor.routes.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5002;
 
+// ✅ CORS
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-    credentials: true
+    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
 
-<<<<<<< Updated upstream
-// ✅ Serve static files from uploads folder
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-=======
-// ============================================
-// ✅ SERVE UPLOADS FOLDER - IMPORTANT!
-// ============================================
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ============================================
-// REGISTER ROUTES
+// ✅ ROUTES
 // ============================================
+console.log('📂 Mounting routes...');
+
 app.use('/api/auth', authRoutes);
+console.log('✅ Auth routes mounted on /api/auth');
+
 app.use('/api/auth', adminRoutes);
+console.log('✅ Admin routes mounted on /api/auth');
+
 app.use('/api/auth', riderRoutes);
->>>>>>> Stashed changes
+console.log('✅ Rider routes mounted on /api/auth');
 
-// Register Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/vendor', vendorRoutes);
+// ✅ FIX: Vendor routes ko /api/auth/vendor pe mount karo
+app.use('/api/auth/vendor', vendorRoutes);
+console.log('✅ Vendor routes mounted on /api/auth/vendor');
 
-// Root route
+// ✅ Test routes
+app.get('/api/test', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: '✅ Backend is running!',
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.get('/', (req, res) => {
     res.json({ message: 'DigitalRawalpindi API is running!' });
 });
+
+console.log('✅ Server starting...');
+console.log('📋 Available Routes:');
+console.log('   - GET  /api/test');
+console.log('   - POST /api/auth/login');
+console.log('   - GET  /api/auth/vendors (Admin)');
+console.log('   - GET  /api/auth/withdrawals (Admin)');
+console.log('   - GET  /api/auth/subscriptions (Admin)');
+console.log('   - GET  /api/auth/vendor/test (Vendor Test)');
+console.log('   - GET  /api/auth/vendor/dashboard-summary (Vendor)');
+console.log('   - GET  /api/auth/vendor/products (Vendor)');
 
 mongoose.connect(process.env.MONGO_URI!)
     .then(() => console.log('✅ MongoDB connected'))
@@ -65,12 +74,5 @@ mongoose.connect(process.env.MONGO_URI!)
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
-<<<<<<< Updated upstream
-    console.log(`🔑 Auth: /api/auth`);
-    console.log(`📋 Admin: /api/admin`);
-    console.log(`📦 Vendor: /api/vendor`);
-    console.log(`📁 Uploads: /uploads`);  // ✅ Added
-=======
-    console.log('✅ Uploads folder served at /uploads');
->>>>>>> Stashed changes
+    console.log(`📡 Test: http://localhost:${PORT}/api/test`);
 });

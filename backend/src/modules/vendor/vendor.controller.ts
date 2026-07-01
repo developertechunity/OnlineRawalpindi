@@ -1,88 +1,22 @@
 // backend/src/modules/vendor/vendor.controller.ts
-import Withdrawal from './Withdrawal.model.js';
 
 import { Request, Response } from 'express';
 import User from '../auth/User.model.js';
 import Product from './Product.model.js';
 import Employee from './Employee.model.js';
+import Withdrawal from './Withdrawal.model.js';
 
 // ============================================
-// 1. REGISTER VENDOR
-// ============================================
-export const registerVendor = async (req: Request, res: Response): Promise<any> => {
-    try {
-        const { name, email, phone, password, shopName, shopAddress } = req.body;
-
-        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-        const cnicFrontPath = files?.['cnicFront']?.[0]?.path || null;
-        const cnicBackPath = files?.['cnicBack']?.[0]?.path || null;
-
-        if (!cnicFrontPath || !cnicBackPath) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Both CNIC Front and CNIC Back images are strictly required!' 
-            });
-        }
-
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ success: false, message: 'Email already registered' });
-        }
-
-        const trialStartDate = new Date();
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 30);
-
-        const vendor = await User.create({
-            name,
-            email,
-            phone,
-            password,
-            role: 'vendor',
-            approvalStatus: 'pending',
-            shopName,
-            shopAddress,
-            cnicFront: cnicFrontPath,
-            cnicBack: cnicBackPath,
-            subscriptionPlan: 'free',
-            subscriptionStatus: 'active',
-            trialStartDate,
-            trialEndDate,
-            totalEarnings: 0,
-            availableBalance: 0,
-            pendingWithdrawals: 0,
-            totalOrdersCount: 0,
-            hasRequestedExtension: false
-        });
-
-        return res.status(201).json({ 
-            success: true, 
-            message: 'Vendor registered successfully! Pending Admin Approval.', 
-            vendor: {
-                id: vendor._id,
-                name: vendor.name,
-                email: vendor.email,
-                shopName: vendor.shopName,
-                approvalStatus: vendor.approvalStatus
-            }
-        });
-    } catch (error: any) {
-        console.error('🔥 Registration Error:', error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
-
-// ============================================
-// 2. DASHBOARD DATA
+// 1. DASHBOARD DATA
 // ============================================
 export const getVendorDashboardData = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
@@ -93,7 +27,7 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
 
         const [productsCount, productsList, employeesList] = await Promise.all([
             Product.countDocuments({ vendorId }),
-            Product.find({ vendorId }).select('_id productName price stockQuantity description status'),
+            Product.find({ vendorId }).select('_id productName price stockQuantity description status colors sizes images'),
             Employee.find({ vendorId }).select('_id employeeName role email')
         ]);
 
@@ -103,7 +37,7 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
         if (vendor.subscriptionPlan === 'free' && vendor.trialEndDate) {
             const diffTime = new Date(vendor.trialEndDate).getTime() - new Date().getTime();
             trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (trialDaysRemaining <= 3 && trialDaysRemaining > 0) {
                 showTrialWarning = true;
             }
@@ -140,8 +74,8 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
                 productsList: formattedProducts,
                 employeesList: formattedEmployees,
                 subscription: {
-                    plan: vendor.subscriptionPlan,
-                    status: vendor.subscriptionStatus,
+                    plan: vendor.subscriptionPlan || 'free',
+                    status: vendor.subscriptionStatus || 'active',
                     daysRemaining: trialDaysRemaining > 0 ? trialDaysRemaining : 0,
                     showTrialWarning,
                     hasRequestedExtension: vendor.hasRequestedExtension || false
@@ -155,26 +89,24 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
 };
 
 // ============================================
-// 3. GET ALL PRODUCTS - WITH FULL IMAGE URLS
+// 2. GET ALL PRODUCTS
 // ============================================
 export const getProducts = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
         const products = await Product.find({ vendorId });
 
-        // ✅ Ensure images have full URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const formattedProducts = products.map((p: any) => {
             let images = p.images || [];
-            // If images are stored as relative paths, convert to full URLs
             if (Array.isArray(images) && images.length > 0) {
                 images = images.map((img: string) => {
                     if (img.startsWith('http')) return img;
@@ -202,17 +134,18 @@ export const getProducts = async (req: any, res: Response): Promise<any> => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // ============================================
-// 4. ADD PRODUCT - WITH FULL IMAGE URL
+// 3. ADD PRODUCT
 // ============================================
 export const addProduct = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
@@ -220,10 +153,10 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
         console.log('📦 [BACKEND] Request Files:', req.files);
 
         const { name, price, stock, description } = req.body;
-        
+
         let colors = [];
         let sizes = [];
-        
+
         if (req.body.colors) {
             try {
                 colors = JSON.parse(req.body.colors);
@@ -231,7 +164,7 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
                 colors = req.body.colors || [];
             }
         }
-        
+
         if (req.body.sizes) {
             try {
                 sizes = JSON.parse(req.body.sizes);
@@ -241,49 +174,47 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
         }
 
         if (!name) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Product Name is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Product Name is required'
             });
         }
         if (!price) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Price is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Price is required'
             });
         }
         if (stock === undefined || stock === null) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Stock quantity is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Stock quantity is required'
             });
         }
         if (!description) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Description is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Description is required'
             });
         }
 
         const files = req.files as Express.Multer.File[];
         if (!files || files.length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'At least 1 product image is required' 
+            return res.status(400).json({
+                success: false,
+                message: 'At least 1 product image is required'
             });
         }
 
         if (files.length > 5) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Maximum 5 images allowed' 
+            return res.status(400).json({
+                success: false,
+                message: 'Maximum 5 images allowed'
             });
         }
 
-        // ✅ Save image paths and create full URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         let imagePaths: string[] = files.map(file => {
-            // Return full URL for each image
             return `${baseUrl}/${file.path.replace(/\\/g, '/')}`;
         });
 
@@ -301,9 +232,9 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
 
         console.log('✅ [BACKEND] Product created:', newProduct._id);
 
-        return res.status(201).json({ 
-            success: true, 
-            message: '🎉 Product added successfully!', 
+        return res.status(201).json({
+            success: true,
+            message: '🎉 Product added successfully!',
             product: {
                 id: newProduct._id,
                 name: newProduct.productName,
@@ -321,18 +252,19 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // ============================================
-// 5. DELETE PRODUCT
+// 4. DELETE PRODUCT
 // ============================================
 export const deleteProduct = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
+        const vendorId = req.userId || req.user?._id;
         const { productId } = req.params;
 
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
@@ -349,16 +281,16 @@ export const deleteProduct = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 6. GET ALL EMPLOYEES
+// 5. GET ALL EMPLOYEES
 // ============================================
 export const getEmployees = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
@@ -379,25 +311,25 @@ export const getEmployees = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 7. ADD EMPLOYEE
+// 6. ADD EMPLOYEE
 // ============================================
 export const addEmployee = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
         const { name, email, role } = req.body;
 
         if (!name || !email || !role) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'All employee fields are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'All employee fields are required'
             });
         }
 
@@ -408,9 +340,9 @@ export const addEmployee = async (req: any, res: Response): Promise<any> => {
             role
         });
 
-        return res.status(201).json({ 
-            success: true, 
-            message: '🎉 Employee added successfully!', 
+        return res.status(201).json({
+            success: true,
+            message: '🎉 Employee added successfully!',
             employee: {
                 id: newEmployee._id,
                 name: newEmployee.employeeName,
@@ -424,17 +356,17 @@ export const addEmployee = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 8. DELETE EMPLOYEE
+// 7. DELETE EMPLOYEE
 // ============================================
 export const deleteEmployee = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
+        const vendorId = req.userId || req.user?._id;
         const { employeeId } = req.params;
 
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
@@ -451,72 +383,96 @@ export const deleteEmployee = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 9. UPGRADE SUBSCRIPTION
+// 8. UPGRADE SUBSCRIPTION - FIXED
 // ============================================
 export const upgradeSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
+        console.log('📋 [VENDOR] Upgrade Subscription - vendorId:', vendorId);
+        console.log('📋 [VENDOR] Request body:', req.body);
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
         const { plan } = req.body;
 
         if (!plan || plan === 'free') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid subscription plan choice' 
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid subscription plan choice'
             });
         }
 
+        // Check if vendor exists
+        const vendor = await User.findById(vendorId);
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Update subscription
         await User.findByIdAndUpdate(vendorId, {
             subscriptionPlan: plan,
             subscriptionStatus: 'pending_approval'
         });
+
+        console.log(`✅ [VENDOR] Subscription request sent: ${plan} plan`);
 
         return res.status(200).json({
             success: true,
             message: '⏳ Subscription request sent for admin approval!'
         });
     } catch (error: any) {
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('❌ [VENDOR] Upgrade subscription error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to process subscription request'
+        });
     }
 };
 
 // ============================================
-// 10. REQUEST TRIAL EXTENSION
+// 9. REQUEST TRIAL EXTENSION - FIXED
 // ============================================
 export const requestTrialExtension = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
+        console.log('📋 [VENDOR] Request Trial Extension - vendorId:', vendorId);
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
         const vendor = await User.findById(vendorId);
         if (!vendor) {
-            return res.status(404).json({ success: false, message: 'Vendor not found' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Vendor not found' 
+            });
         }
 
         if (vendor.hasRequestedExtension) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Extension already requested. Waiting for admin approval.' 
+            return res.status(400).json({
+                success: false,
+                message: 'Extension already requested. Waiting for admin approval.'
             });
         }
 
         if (vendor.trialEndDate && new Date() > new Date(vendor.trialEndDate)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Trial expired. Please subscribe to continue.' 
+            return res.status(400).json({
+                success: false,
+                message: 'Trial expired. Please subscribe to continue.'
             });
         }
 
@@ -526,26 +482,32 @@ export const requestTrialExtension = async (req: any, res: Response): Promise<an
             subscriptionStatus: 'pending_approval'
         });
 
+        console.log('✅ [VENDOR] Trial extension request sent');
+
         return res.status(200).json({
             success: true,
             message: '✅ Trial extension request sent for admin approval!'
         });
     } catch (error: any) {
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('❌ [VENDOR] Trial extension error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to request trial extension'
+        });
     }
 };
 
 // ============================================
-// 11. GET TRIAL STATUS
+// 10. GET TRIAL STATUS
 // ============================================
 export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized: User ID not found' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User ID not found'
             });
         }
 
@@ -560,7 +522,7 @@ export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
         if (vendor.subscriptionPlan === 'free' && vendor.trialEndDate) {
             const diffTime = new Date(vendor.trialEndDate).getTime() - new Date().getTime();
             trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (trialDaysRemaining <= 3 && trialDaysRemaining > 0) {
                 showTrialWarning = true;
             }
@@ -569,8 +531,8 @@ export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
         return res.status(200).json({
             success: true,
             data: {
-                plan: vendor.subscriptionPlan,
-                status: vendor.subscriptionStatus,
+                plan: vendor.subscriptionPlan || 'free',
+                status: vendor.subscriptionStatus || 'active',
                 daysRemaining: trialDaysRemaining > 0 ? trialDaysRemaining : 0,
                 showTrialWarning,
                 hasRequestedExtension: vendor.hasRequestedExtension || false,
@@ -583,35 +545,42 @@ export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 12. START FREE TRIAL
+// 11. START FREE TRIAL - FIXED
 // ============================================
 export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
+        console.log('📋 [VENDOR] Start Free Trial - vendorId:', vendorId);
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
             });
         }
 
         const vendor = await User.findById(vendorId);
         if (!vendor) {
-            return res.status(404).json({ success: false, message: 'Vendor not found' });
-        }
-
-        if (vendor.subscriptionPlan === 'free' && vendor.subscriptionStatus === 'active') {
-            return res.status(400).json({ 
+            return res.status(404).json({ 
                 success: false, 
-                message: 'You are already on free trial' 
+                message: 'Vendor not found' 
             });
         }
 
+        // Check if already on free trial
+        if (vendor.subscriptionPlan === 'free' && vendor.subscriptionStatus === 'active') {
+            return res.status(400).json({
+                success: false,
+                message: 'You are already on free trial'
+            });
+        }
+
+        // Check if pending approval
         if (vendor.subscriptionStatus === 'pending_approval') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'You have a pending subscription request. Please cancel it first.' 
+            return res.status(400).json({
+                success: false,
+                message: 'You have a pending subscription request. Please cancel it first.'
             });
         }
 
@@ -627,39 +596,52 @@ export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
             hasRequestedExtension: false
         });
 
+        console.log('✅ [VENDOR] Free trial started successfully');
+
         return res.status(200).json({
             success: true,
-            message: 'Free trial started successfully! You have 30 days.'
+            message: 'Free trial started successfully! You have 30 days.',
+            data: {
+                trialEndDate: trialEndDate
+            }
         });
     } catch (error: any) {
-        console.error('Start trial error:', error);
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('❌ [VENDOR] Start trial error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to start free trial'
+        });
     }
 };
 
 // ============================================
-// 13. CANCEL SUBSCRIPTION REQUEST
+// 12. CANCEL SUBSCRIPTION REQUEST - FIXED
 // ============================================
 export const cancelSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
-        
+        const vendorId = req.userId || req.user?._id;
+
+        console.log('📋 [VENDOR] Cancel Subscription Request - vendorId:', vendorId);
+
         if (!vendorId) {
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Unauthorized' 
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
             });
         }
 
         const vendor = await User.findById(vendorId);
         if (!vendor) {
-            return res.status(404).json({ success: false, message: 'Vendor not found' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Vendor not found' 
+            });
         }
 
         if (vendor.subscriptionStatus !== 'pending_approval') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'No pending subscription request found' 
+            return res.status(400).json({
+                success: false,
+                message: 'No pending subscription request found'
             });
         }
 
@@ -670,24 +652,27 @@ export const cancelSubscriptionRequest = async (req: any, res: Response): Promis
             extensionRequestDate: null
         });
 
+        console.log('✅ [VENDOR] Subscription request cancelled');
+
         return res.status(200).json({
             success: true,
             message: 'Subscription request cancelled. You are back on Free Trial.'
         });
     } catch (error: any) {
-        console.error('Cancel subscription error:', error);
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('❌ [VENDOR] Cancel subscription error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to cancel subscription request'
+        });
     }
 };
 
-
-
 // ============================================
-// 14. REQUEST WITHDRAWAL
+// 13. REQUEST WITHDRAWAL (VENDOR)
 // ============================================
 export const requestWithdrawal = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
+        const vendorId = req.userId || req.user?._id;
         const { amount, method, accountNumber, accountHolderName } = req.body;
 
         console.log('💰 Withdrawal Request:', { vendorId, amount, method, accountNumber, accountHolderName });
@@ -699,7 +684,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // ✅ Validate input
         if (!amount || !method || !accountNumber || !accountHolderName) {
             return res.status(400).json({
                 success: false,
@@ -708,8 +692,7 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
         }
 
         const amountNum = Number(amount);
-        
-        // ✅ Validate amount range
+
         if (amountNum < 5000) {
             return res.status(400).json({
                 success: false,
@@ -724,7 +707,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Get vendor
         const vendor = await User.findById(vendorId);
         if (!vendor) {
             return res.status(404).json({
@@ -733,7 +715,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Check balance
         const availableBalance = vendor.availableBalance || 0;
         if (amountNum > availableBalance) {
             return res.status(400).json({
@@ -742,7 +723,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Create withdrawal request
         const withdrawal = await Withdrawal.create({
             vendorId,
             amount: amountNum,
@@ -753,7 +733,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             requestedAt: new Date()
         });
 
-        // Update vendor's pending withdrawals
         vendor.pendingWithdrawals = (vendor.pendingWithdrawals || 0) + amountNum;
         await vendor.save();
 
@@ -770,7 +749,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
                 requestedAt: withdrawal.requestedAt
             }
         });
-
     } catch (error: any) {
         console.error('Withdrawal request error:', error);
         return res.status(500).json({
@@ -781,11 +759,11 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
 };
 
 // ============================================
-// 15. GET WITHDRAWAL HISTORY
+// 14. GET WITHDRAWAL HISTORY (VENDOR)
 // ============================================
 export const getWithdrawalHistory = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId;
+        const vendorId = req.userId || req.user?._id;
 
         if (!vendorId) {
             return res.status(401).json({
@@ -809,7 +787,6 @@ export const getWithdrawalHistory = async (req: any, res: Response): Promise<any
                 adminNotes: w.adminNotes
             }))
         });
-
     } catch (error: any) {
         return res.status(500).json({
             success: false,
@@ -817,3 +794,8 @@ export const getWithdrawalHistory = async (req: any, res: Response): Promise<any
         });
     }
 };
+
+// ✅ REMOVED: getWithdrawals (Admin version moved to admin.controller.ts)
+// ✅ REMOVED: updateWithdrawalStatus (Admin version moved to admin.controller.ts)
+// ✅ REMOVED: getSubscriptionRequests (Admin version moved to admin.controller.ts)
+// ✅ REMOVED: updateSubscriptionStatus (Admin version moved to admin.controller.ts)

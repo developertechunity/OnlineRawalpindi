@@ -1,5 +1,3 @@
-// backend/src/modules/vendor/Withdrawal.model.ts
-
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IWithdrawal extends Document {
@@ -15,44 +13,44 @@ export interface IWithdrawal extends Document {
 }
 
 const WithdrawalSchema: Schema = new Schema({
-    vendorId: { 
-        type: Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true 
+    vendorId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
-    amount: { 
-        type: Number, 
+    amount: {
+        type: Number,
         required: true,
         min: 5000,
         max: 1000000
     },
-    method: { 
-        type: String, 
-        enum: ['easypaisa', 'jazzcash', 'bank'], 
-        required: true 
+    method: {
+        type: String,
+        enum: ['easypaisa', 'jazzcash', 'bank'],
+        required: true
     },
-    accountNumber: { 
-        type: String, 
-        required: true 
+    accountNumber: {
+        type: String,
+        required: true
     },
-    accountHolderName: { 
-        type: String, 
-        required: true 
+    accountHolderName: {
+        type: String,
+        required: true
     },
-    status: { 
-        type: String, 
-        enum: ['pending', 'approved', 'rejected', 'processed'], 
-        default: 'pending' 
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected', 'processed'],
+        default: 'pending'
     },
-    requestedAt: { 
-        type: Date, 
-        default: Date.now 
+    requestedAt: {
+        type: Date,
+        default: Date.now
     },
-    processedAt: { 
-        type: Date 
+    processedAt: {
+        type: Date
     },
-    adminNotes: { 
-        type: String 
+    adminNotes: {
+        type: String
     }
 }, { timestamps: true });
 
