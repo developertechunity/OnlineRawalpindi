@@ -1,10 +1,10 @@
 // backend/src/modules/vendor/vendor.controller.ts
-import Withdrawal from './Withdrawal.model.js';
 
 import { Request, Response } from 'express';
 import User from '../auth/User.model.js';
 import Product from './Product.model.js';
 import Employee from './Employee.model.js';
+import Withdrawal from './Withdrawal.model.js';
 
 // ============================================
 // 1. REGISTER VENDOR
@@ -170,11 +170,9 @@ export const getProducts = async (req: any, res: Response): Promise<any> => {
 
         const products = await Product.find({ vendorId });
 
-        // ✅ Ensure images have full URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const formattedProducts = products.map((p: any) => {
             let images = p.images || [];
-            // If images are stored as relative paths, convert to full URLs
             if (Array.isArray(images) && images.length > 0) {
                 images = images.map((img: string) => {
                     if (img.startsWith('http')) return img;
@@ -202,6 +200,7 @@ export const getProducts = async (req: any, res: Response): Promise<any> => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // ============================================
 // 4. ADD PRODUCT - WITH FULL IMAGE URL
 // ============================================
@@ -280,10 +279,8 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
             });
         }
 
-        // ✅ Save image paths and create full URLs
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         let imagePaths: string[] = files.map(file => {
-            // Return full URL for each image
             return `${baseUrl}/${file.path.replace(/\\/g, '/')}`;
         });
 
@@ -321,6 +318,7 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // ============================================
 // 5. DELETE PRODUCT
 // ============================================
@@ -680,8 +678,6 @@ export const cancelSubscriptionRequest = async (req: any, res: Response): Promis
     }
 };
 
-
-
 // ============================================
 // 14. REQUEST WITHDRAWAL
 // ============================================
@@ -699,7 +695,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // ✅ Validate input
         if (!amount || !method || !accountNumber || !accountHolderName) {
             return res.status(400).json({
                 success: false,
@@ -709,7 +704,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
 
         const amountNum = Number(amount);
         
-        // ✅ Validate amount range
         if (amountNum < 5000) {
             return res.status(400).json({
                 success: false,
@@ -724,7 +718,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Get vendor
         const vendor = await User.findById(vendorId);
         if (!vendor) {
             return res.status(404).json({
@@ -733,7 +726,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Check balance
         const availableBalance = vendor.availableBalance || 0;
         if (amountNum > availableBalance) {
             return res.status(400).json({
@@ -742,7 +734,7 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Create withdrawal request
+        // ✅ Create withdrawal using Withdrawal model
         const withdrawal = await Withdrawal.create({
             vendorId,
             amount: amountNum,

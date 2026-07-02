@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { protect } from '../auth/auth.middleware.js';
-import { upload } from './vendor.middleware.js';  // ✅ Import upload
+import { upload } from './vendor.middleware.js';
 import {
     getVendorDashboardData,
     getProducts,
@@ -16,14 +16,14 @@ import {
     getTrialStatus,
     startFreeTrial,
     cancelSubscriptionRequest,
-    requestWithdrawal,         
-    getWithdrawalHistory    
+    requestWithdrawal,
+    getWithdrawalHistory
 } from './vendor.controller.js';
 
 const router = express.Router();
 
 // =========================================================
-// ✅ TEST ROUTE
+// TEST ROUTE
 // =========================================================
 router.get('/test', (req, res) => {
     res.json({ 
@@ -34,26 +34,34 @@ router.get('/test', (req, res) => {
 });
 
 // =========================================================
-// ✅ PROTECTED ROUTES
+// DASHBOARD
 // =========================================================
-
-// ---------- DASHBOARD ----------
 router.get('/dashboard-summary', protect, getVendorDashboardData);
 router.get('/trial-status', protect, getTrialStatus);
 
-// ---------- PRODUCTS ----------
+// =========================================================
+// PRODUCTS
+// =========================================================
 router.get('/products', protect, getProducts);
-router.post('/products/add', protect, upload.array('images', 5), addProduct);  // ✅ Added upload middleware
+router.post('/products/add', protect, upload.array('images', 5), addProduct);
 router.delete('/products/:productId', protect, deleteProduct);
 
-// ---------- EMPLOYEES ----------
+// =========================================================
+// EMPLOYEES
+// =========================================================
 router.get('/employees', protect, getEmployees);
 router.post('/employees/add', protect, addEmployee);
 router.delete('/employees/:employeeId', protect, deleteEmployee);
 
+// =========================================================
+// ✅ WITHDRAWAL ROUTES - ENABLED
+// =========================================================
 router.post('/withdrawal/request', protect, requestWithdrawal);
 router.get('/withdrawal/history', protect, getWithdrawalHistory);
-// ---------- SUBSCRIPTION ----------
+
+// =========================================================
+// SUBSCRIPTION
+// =========================================================
 router.post('/subscription/start-trial', protect, startFreeTrial);
 router.post('/subscription/upgrade', protect, upgradeSubscriptionRequest);
 router.post('/subscription/cancel-request', protect, cancelSubscriptionRequest);
