@@ -1373,3 +1373,441 @@
 .table th {
     color: #1a1a2e !important;
 }
+
+/* ============================================
+   SUBSCRIPTION MODAL - PLAN SELECTOR
+   ============================================ */
+.planSelector {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 5px;
+}
+
+.planOption {
+    padding: 14px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.planOption:hover {
+    border-color: #4a6cf7;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 108, 247, 0.15);
+}
+
+.planOptionActive {
+    border-color: #4a6cf7;
+    background: #f0f4ff;
+    box-shadow: 0 4px 12px rgba(74, 108, 247, 0.2);
+}
+
+.planOptionName {
+    display: block;
+    font-weight: 700;
+    color: #1a1a2e;
+    font-size: 16px;
+}
+
+.planOptionPrice {
+    display: block;
+    font-size: 15px;
+    color: #4a6cf7;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+.planOptionActive .planOptionName {
+    color: #4a6cf7;
+}
+/* ============================================
+   BUSINESS REGISTRATION
+   ============================================ */
+.registrationContainer {
+    padding: 10px 0;
+}
+
+.stepIndicator {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.stepActive {
+    font-weight: 700;
+    color: #4a6cf7;
+    padding: 8px 16px;
+    background: #e8edff;
+    border-radius: 20px;
+}
+
+.stepInactive {
+    color: #6c757d;
+    padding: 8px 16px;
+}
+
+.stepArrow {
+    color: #6c757d;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.subtypeGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.subtypeOption {
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.subtypeOption:hover {
+    background: #e8edff;
+    border-color: #4a6cf7;
+}
+
+.subtypeOption label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+}
+
+.subtypeOption input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.timingGrid {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.timingRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.timingDay {
+    width: 80px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+    text-transform: capitalize;
+}
+
+.timingRow .formInput {
+    width: 100px;
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.socialLinkRow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.socialLinkRow .formInput {
+    flex: 1;
+}
+
+.removeBtn {
+    padding: 0 12px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.2s ease;
+}
+
+.removeBtn:hover {
+    background: #c82333;
+}
+
+.addBtn {
+    padding: 8px 16px;
+    background: #4a6cf7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+}
+
+.addBtn:hover {
+    background: #3a5bd9;
+}
+
+.fileInput {
+    padding: 10px;
+    border: 1px dashed #ddd;
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+}
+
+.previewImage {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+}
+
+.galleryPreviews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.galleryItem {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.galleryItem img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.removeGalleryBtn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #dc3545;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease;
+}
+
+.removeGalleryBtn:hover {
+    background: #c82333;
+}
+
+.buttonRow {
+    display: flex;
+    gap: 10px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    flex-wrap: wrap;
+}
+
+.buttonRow .secondaryBtn {
+    flex: 0 0 auto;
+}
+
+.buttonRow .primaryBtn {
+    flex: 1;
+}
+
+.buttonRow .successBtn {
+    flex: 1;
+}
+
+/* Preview Modal */
+.previewContent {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.previewRow {
+    display: flex;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.previewRow strong {
+    min-width: 140px;
+    color: #1a1a2e;
+}
+
+.previewImages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.previewImages img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+/* Business Switcher */
+.businessSwitcher {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.businessSwitcher label {
+    font-weight: 600;
+    color: #333;
+}
+
+.businessSwitcher .formSelect {
+    max-width: 300px;
+}
+
+/* Plan Cards in Registration */
+.registrationContainer .planCard {
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.registrationContainer .planCard:hover {
+    border-color: #4a6cf7;
+    transform: translateY(-3px);
+}
+
+.registrationContainer .planCard .planName {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+}
+
+.registrationContainer .planCard .planPrice {
+    font-size: 24px;
+    font-weight: 700;
+    color: #4a6cf7;
+    margin: 10px 0;
+}
+
+.registrationContainer .planCard .planPrice span {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+.registrationContainer .planCard .planFeatures {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 20px 0;
+}
+
+.registrationContainer .planCard .planFeatures li {
+    padding: 5px 0;
+    color: #555;
+    font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .row {
+        grid-template-columns: 1fr;
+    }
+    
+    .subtypeGrid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+    
+    .timingRow {
+        flex-wrap: wrap;
+    }
+    
+    .timingDay {
+        width: 100%;
+    }
+    
+    .timingRow .formInput {
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .buttonRow {
+        flex-direction: column;
+    }
+    
+    .buttonRow .secondaryBtn,
+    .buttonRow .primaryBtn,
+    .buttonRow .successBtn {
+        width: 100%;
+        flex: none;
+    }
+    
+    .businessSwitcher {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .businessSwitcher .formSelect {
+        max-width: 100%;
+    }
+    
+    .registrationContainer .planCard {
+        padding: 20px;
+    }
+    
+    .registrationContainer .planCard .planPrice {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stepIndicator {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .stepIndicator .stepArrow {
+        display: none;
+    }
+}

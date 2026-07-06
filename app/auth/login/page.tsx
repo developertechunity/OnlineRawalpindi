@@ -10,22 +10,22 @@ interface ErrorResponse {
     message: string;
 }
 
+// ✅ FIXED: Correct API_BASE
+const API_BASE = 'http://localhost:5002/api';
+
 function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     
-    // Form Inputs
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [otp, setOtp] = useState('');
     const [newPassword, setNewPassword] = useState('');
     
-    // UI States
     const [selectedRole, setSelectedRole] = useState(searchParams.get('role') || '');
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     
-    // Navigation States: 'login' | 'forgot' | 'verify_otp'
     const [mode, setMode] = useState<'login' | 'forgot' | 'verify_otp'>('login');
 
     const roles = [
@@ -43,7 +43,7 @@ function LoginForm() {
         try {
             if (mode === 'forgot') {
                 const response = await axios.post(
-                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/forgot-password`,
+                    `${API_BASE}/auth/forgot-password`,
                     { email }
                 );
                 setMessage(`✅ ${response.data.message || 'OTP code sent to your email!'}`);
@@ -51,7 +51,7 @@ function LoginForm() {
             } 
             else if (mode === 'verify_otp') {
                 const response = await axios.post(
-                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/reset-password`,
+                    `${API_BASE}/auth/reset-password`,
                     { email, otp, newPassword }
                 );
                 setMessage(`✅ ${response.data.message || 'Password reset successfully!'}`);
@@ -62,7 +62,7 @@ function LoginForm() {
             } 
             else {
                 const response = await axios.post(
-                    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/login`,
+                    `${API_BASE}/auth/login`,
                     { email, password }
                 );
                 const user = response.data.user;
@@ -111,8 +111,6 @@ function LoginForm() {
                 )}
 
                 <form onSubmit={handleSubmit} className={styles.form}>
-                    
-                    {/* MODE: LOGIN */}
                     {mode === 'login' && (
                         <>
                             <input
@@ -158,7 +156,6 @@ function LoginForm() {
                         </>
                     )}
 
-                    {/* MODE: FORGOT PASSWORD */}
                     {mode === 'forgot' && (
                         <>
                             <input
@@ -172,7 +169,6 @@ function LoginForm() {
                         </>
                     )}
 
-                    {/* MODE: VERIFY OTP */}
                     {mode === 'verify_otp' && (
                         <>
                             <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '10px' }}>
