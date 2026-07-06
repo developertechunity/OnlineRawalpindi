@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, ChangeEvent, FormEvent, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios, { AxiosError } from 'axios';
@@ -34,8 +34,6 @@ export default function RegisterPage() {
     // ============================================
     const [shopName, setShopName] = useState<string>('');
     const [shopAddress, setShopAddress] = useState<string>('');
-    
-    // ✅ New Optional Fields
     const [ntnNumber, setNtnNumber] = useState<string>('');
     const [businessLicense, setBusinessLicense] = useState<File | null>(null);
     const [businessLicensePreview, setBusinessLicensePreview] = useState<string>('');
@@ -53,6 +51,11 @@ export default function RegisterPage() {
     const [licenseNumber, setLicenseNumber] = useState<string>('');
     const [zone, setZone] = useState<string>('Rawalpindi');
 
+    // ============================================
+    // REF FOR SCROLLING TO TOP
+    // ============================================
+    const cardRef = useRef<HTMLDivElement>(null);
+
     const roles = [
         { id: 'vendor', label: '🏪 Vendor' },
         { id: 'customer', label: '🛍️ Customer' },
@@ -61,6 +64,21 @@ export default function RegisterPage() {
 
     const vehicleTypes = ['bike', 'car', 'van', 'cycle'];
     const zones = ['Rawalpindi', 'Islamabad', 'Both'];
+
+    // ============================================
+    // SCROLL TO TOP WHEN MESSAGE APPEARS
+    // ============================================
+    useEffect(() => {
+        if (message) {
+            // Scroll to top of card
+            if (cardRef.current) {
+                cardRef.current.scrollTop = 0;
+                cardRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            // Also scroll window to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [message]);
 
     // ============================================
     // FILE HANDLERS
@@ -81,7 +99,6 @@ export default function RegisterPage() {
         }
     };
 
-    // ✅ Business License Handler
     const handleBusinessLicenseChange = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -121,24 +138,15 @@ export default function RegisterPage() {
             formData.append('password', password);
             formData.append('role', selectedRole);
 
-            // ============================================
-            // VENDOR FIELDS (With Optional NTN + Business License)
-            // ============================================
             if (selectedRole === 'vendor') {
                 formData.append('shopName', shopName);
                 formData.append('shopAddress', shopAddress);
-                
-                // ✅ Optional fields - only append if provided
                 if (ntnNumber) formData.append('ntnNumber', ntnNumber);
                 if (businessLicense) formData.append('businessLicense', businessLicense);
-                
                 if (cnicFront) formData.append('cnicFront', cnicFront);
                 if (cnicBack) formData.append('cnicBack', cnicBack);
             }
 
-            // ============================================
-            // RIDER FIELDS
-            // ============================================
             if (selectedRole === 'rider') {
                 formData.append('vehicleType', vehicleType);
                 formData.append('vehicleNumber', vehicleNumber);
@@ -169,10 +177,22 @@ export default function RegisterPage() {
             setTimeout(() => router.push('/auth/login'), 3000);
         } catch (error: unknown) {
             const axiosError = error as AxiosError<ErrorResponse>;
-            setMessage({ 
-                type: 'error', 
-                text: axiosError.response?.data?.message || '❌ Registration failed' 
-            });
+            const errorMessage = axiosError.response?.data?.message || '❌ Registration failed';
+            
+            // ✅ Check if error is about email already exists
+            if (errorMessage.toLowerCase().includes('email') || 
+                errorMessage.toLowerCase().includes('already exists') ||
+                errorMessage.toLowerCase().includes('duplicate')) {
+                setMessage({ 
+                    type: 'error', 
+                    text: '❌ Link already exists with this email. Please use a different email address.' 
+                });
+            } else {
+                setMessage({ 
+                    type: 'error', 
+                    text: errorMessage 
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -183,10 +203,10 @@ export default function RegisterPage() {
 
     return (
         <div className={styles.container}>
-            <div className={styles.card}>
+            <div className={styles.card} ref={cardRef}>
                 <Link href="/" className={styles.backLink}>← Back</Link>
                 <h2 className={styles.title}>Create Account</h2>
-                <p className={styles.subtitle}>Join DigitalRawalpindi</p>
+                <p className={styles.subtitle}>Join DigitalReadyJobs</p>
 
                 {message && (
                     <div className={message.type === 'error' ? styles.messageError : styles.messageSuccess}>
@@ -298,9 +318,6 @@ export default function RegisterPage() {
                                 />
                             </div>
 
-                            {/* ============================================
-                                OPTIONAL FIELDS (NTN + Business License)
-                            ============================================ */}
                             <div className={styles.sectionTitle}>📋 Business Documents</div>
                             <p className={styles.uploadHint}>These fields are optional. You can skip them.</p>
 

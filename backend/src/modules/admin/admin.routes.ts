@@ -16,11 +16,14 @@ import {
     getAnnouncements,
     createAnnouncement,
     deleteAnnouncement,
-    // ✅ IMPORT WITHDRAWAL & SUBSCRIPTION FUNCTIONS
+    // ✅ WITHDRAWAL & SUBSCRIPTION
     getWithdrawals,
     updateWithdrawalStatus,
     getSubscriptionRequests,
-    updateSubscriptionStatus
+    updateSubscriptionStatus,
+    // ✅ DELETE & UPDATE VENDOR (ADD THESE)
+    deleteVendor,
+    updateVendor
 } from './admin.controller.js';
 import { protect, restrictTo } from '../auth/auth.middleware.js';
 
@@ -31,6 +34,8 @@ const router = Router();
 // ============================================
 router.get('/vendors', protect, restrictTo('admin'), getVendors);
 router.put('/vendor/:id/status', protect, restrictTo('admin'), updateVendorStatus);
+router.delete('/vendor/:id', protect, restrictTo('admin'), deleteVendor);
+router.put('/vendor/:id', protect, restrictTo('admin'), updateVendor);
 
 // ============================================
 // RIDERS & CUSTOMERS

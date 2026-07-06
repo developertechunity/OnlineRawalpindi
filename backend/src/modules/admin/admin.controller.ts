@@ -18,6 +18,7 @@ export const getVendors = async (req: Request, res: Response) => {
 
         const formattedVendors = vendors.map((vendor: any) => ({
             id: vendor._id,
+             vendorId: vendor.vendorId || null,  // ✅ NEW
             shopName: vendor.shopName || vendor.name + "'s Shop",
             ownerName: vendor.name,
             email: vendor.email,
@@ -380,6 +381,84 @@ export const updateWithdrawalStatus = async (req: Request, res: Response) => {
         res.json({ success: true, message: `Withdrawal ${status} successfully` });
     } catch (error: any) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// ✅ DELETE VENDOR
+// ============================================
+export const deleteVendor = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        
+        const vendor = await User.findOne({ _id: id, role: 'vendor' });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+        
+        await User.deleteOne({ _id: id });
+        
+        res.json({
+            success: true,
+            message: 'Vendor deleted successfully'
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ============================================
+// ✅ UPDATE VENDOR
+// ============================================
+export const updateVendor = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { shopName, ownerName, email, phone, shopAddress, ntnNumber } = req.body;
+        
+        const vendor = await User.findOne({ _id: id, role: 'vendor' });
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+        
+        // Update fields
+        if (shopName) vendor.shopName = shopName;
+        if (ownerName) vendor.name = ownerName;
+        if (email) vendor.email = email;
+        if (phone) vendor.phone = phone;
+        if (shopAddress) vendor.shopAddress = shopAddress;
+        if (ntnNumber) vendor.ntnNumber = ntnNumber;
+        
+        await vendor.save();
+        
+        res.json({
+            success: true,
+            message: 'Vendor updated successfully',
+            vendor: {
+                id: vendor._id,
+                shopName: vendor.shopName,
+                ownerName: vendor.name,
+                email: vendor.email,
+                phone: vendor.phone,
+                shopAddress: vendor.shopAddress,
+                ntnNumber: vendor.ntnNumber,
+                status: vendor.approvalStatus,
+                date: vendor.createdAt ? new Date(vendor.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+            }
+        });
+    } catch (error: any) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 

@@ -7,6 +7,7 @@ import authRoutes from './src/modules/auth/auth.routes.js';
 import adminRoutes from './src/modules/admin/admin.routes.js';
 import riderRoutes from './src/modules/rider/rider.routes.js';
 import vendorRoutes from './src/modules/vendor/vendor.routes.js';
+import paymentRoutes from './src/modules/payment/payment.routes.js';  // ✅ Added
 
 dotenv.config();
 
@@ -44,6 +45,8 @@ console.log('✅ Rider routes mounted on /api/auth');
 app.use('/api/auth/vendor', vendorRoutes);
 console.log('✅ Vendor routes mounted on /api/auth/vendor');
 
+app.use('/api/payment', paymentRoutes);  // ✅ Added payment routes
+
 // ✅ Test routes
 app.get('/api/test', (req, res) => {
     res.json({ 
@@ -67,6 +70,7 @@ console.log('   - GET  /api/auth/subscriptions (Admin)');
 console.log('   - GET  /api/auth/vendor/test (Vendor Test)');
 console.log('   - GET  /api/auth/vendor/dashboard-summary (Vendor)');
 console.log('   - GET  /api/auth/vendor/products (Vendor)');
+console.log(`💳 Payment: /api/payment`);  // ✅ Added
 
 mongoose.connect(process.env.MONGO_URI!)
     .then(() => console.log('✅ MongoDB connected'))

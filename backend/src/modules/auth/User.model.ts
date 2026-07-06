@@ -9,13 +9,15 @@ export interface IUser extends Document {
     isVerified: boolean;
     isActive: boolean;
     approvalStatus: 'pending' | 'approved' | 'rejected';
+    // ✅ NEW: Unique Vendor ID
+    vendorId?: string;
     shopName?: string;
     shopAddress?: string;
     cnicFront?: string;
     cnicBack?: string;
     ntnNumber?: string;
     businessLicense?: string;
-    // ✅ SUBSCRIPTION FIELDS
+    // Subscription fields
     totalEarnings: number;
     availableBalance: number;
     pendingWithdrawals: number;
@@ -51,6 +53,12 @@ const UserSchema: Schema = new Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
+    // ✅ NEW: Unique Vendor ID
+    vendorId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     // Vendor fields
     shopName: { type: String, default: '' },
     shopAddress: { type: String, default: '' },
@@ -58,7 +66,7 @@ const UserSchema: Schema = new Schema({
     cnicBack: { type: String, default: '' },
     ntnNumber: { type: String, default: '' },
     businessLicense: { type: String, default: '' },
-    // ✅ SUBSCRIPTION FIELDS
+    // Subscription fields
     totalEarnings: { type: Number, default: 0, min: 0 },
     availableBalance: { type: Number, default: 0, min: 0 },
     pendingWithdrawals: { type: Number, default: 0, min: 0 },

@@ -4,11 +4,36 @@ import jwt from 'jsonwebtoken';
 import User from './User.model.js';
 
 // ============================================
-// REGISTER (Supports multipart/form-data)
+// ✅ Generate Unique Vendor ID - FIXED
+// ============================================
+const getNextVendorId = async (): Promise<string> => {
+    // ✅ Sab se bada vendorId find karo
+    const lastVendor = await User.findOne({ 
+        role: 'vendor',
+        vendorId: { $exists: true, $ne: null }
+    })
+    .sort({ vendorId: -1 })
+    .select('vendorId');
+    
+    if (!lastVendor || !lastVendor.vendorId) {
+        return 'V-0001';
+    }
+    
+    const match = lastVendor.vendorId.match(/V-(\d+)/);
+    if (!match) {
+        return 'V-0001';
+    }
+    
+    const lastNumber = parseInt(match[1]);
+    const nextNumber = lastNumber + 1;
+    return `V-${String(nextNumber).padStart(4, '0')}`;
+};
+
+// ============================================
+// REGISTER
 // ============================================
 export const register = async (req: Request, res: Response) => {
     try {
-        // ✅ Support both JSON and FormData
         const body = req.body;
         
         const name = body.name;
@@ -22,29 +47,25 @@ export const register = async (req: Request, res: Response) => {
         const cnicFront = body.cnicFront || '';
         const cnicBack = body.cnicBack || '';
         
-        // ✅ Handle file uploads - get filenames if files uploaded
         const files = req.files as any;
+        let businessLicensePath = '';
+        let cnicFrontPath = '';
+        let cnicBackPath = '';
 
-let businessLicensePath = '';
-let cnicFrontPath = '';
-let cnicBackPath = '';
+        if (files) {
+            if (files.businessLicense && files.businessLicense.length > 0) {
+                businessLicensePath = `uploads/${files.businessLicense[0].filename}`;
+            }
+            if (files.cnicFront && files.cnicFront.length > 0) {
+                cnicFrontPath = `uploads/${files.cnicFront[0].filename}`;
+            }
+            if (files.cnicBack && files.cnicBack.length > 0) {
+                cnicBackPath = `uploads/${files.cnicBack[0].filename}`;
+            }
+        }
 
-if (files) {
-    if (files.businessLicense && files.businessLicense.length > 0) {
-        businessLicensePath = `uploads/${files.businessLicense[0].filename}`;
-    }
-
-    if (files.cnicFront && files.cnicFront.length > 0) {
-        cnicFrontPath = `uploads/${files.cnicFront[0].filename}`;
-    }
-
-    if (files.cnicBack && files.cnicBack.length > 0) {
-        cnicBackPath = `uploads/${files.cnicBack[0].filename}`;
-    }
-}
         console.log('📝 Registration attempt:', { name, email, role, shopName });
 
-        // ✅ Validation
         if (!name || !email || !password) {
             return res.status(400).json({
                 success: false,
@@ -52,7 +73,6 @@ if (files) {
             });
         }
 
-        // ✅ Check if user exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(400).json({
@@ -61,15 +81,11 @@ if (files) {
             });
         }
 
-        // ✅ Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // ✅ Calculate trial dates
         const trialStartDate = new Date();
         const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + 30); // 30 days trial
+        trialEndDate.setDate(trialEndDate.getDate() + 30);
 
-        // ✅ Create user object
         const userData: any = {
             name,
             email,
@@ -79,8 +95,11 @@ if (files) {
             approvalStatus: role === 'vendor' ? 'pending' : 'approved'
         };
 
-        // ✅ Vendor specific fields
         if (role === 'vendor') {
+            // ✅ Generate unique vendorId
+            const vendorId = await getNextVendorId();
+            
+            userData.vendorId = vendorId;
             userData.shopName = shopName || name + "'s Shop";
             userData.shopAddress = shopAddress || '';
             userData.ntnNumber = ntnNumber || '';
@@ -94,12 +113,10 @@ if (files) {
             userData.pendingWithdrawals = 0;
             userData.totalOrdersCount = 0;
             userData.hasRequestedExtension = false;
-            // ✅ TRIAL DATES SET KARO
             userData.trialStartDate = trialStartDate;
             userData.trialEndDate = trialEndDate;
         }
 
-        // ✅ Rider specific fields
         if (role === 'rider') {
             userData.vehicleType = body.vehicleType || 'bike';
             userData.vehicleNumber = body.vehicleNumber || '';
@@ -113,9 +130,8 @@ if (files) {
         await user.save();
 
         console.log('✅ User registered:', user._id);
-        console.log('✅ Trial End Date:', user.trialEndDate);
+        console.log('✅ Vendor ID:', user.vendorId);
 
-        // ✅ Generate token
         const token = jwt.sign(
             { id: user._id, role: user.role },
             process.env.JWT_SECRET || 'fallback_secret_key',
@@ -128,6 +144,7 @@ if (files) {
             token,
             user: {
                 id: user._id,
+                vendorId: user.vendorId || null,
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
@@ -153,7 +170,6 @@ export const login = async (req: Request, res: Response) => {
     try {
         const { email, password, role } = req.body;
 
-        // Find user
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(401).json({
@@ -162,7 +178,6 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
-        // Check password
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(401).json({
@@ -171,7 +186,6 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
-        // Check role
         if (role && user.role !== role) {
             return res.status(401).json({
                 success: false,
@@ -179,7 +193,6 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
-        // Check approval status for vendors
         if (user.role === 'vendor' && user.approvalStatus !== 'approved') {
             return res.status(403).json({
                 success: false,
@@ -187,7 +200,6 @@ export const login = async (req: Request, res: Response) => {
             });
         }
 
-        // Generate token
         const token = jwt.sign(
             { id: user._id, role: user.role },
             process.env.JWT_SECRET || 'fallback_secret_key',
@@ -200,6 +212,7 @@ export const login = async (req: Request, res: Response) => {
             token,
             user: {
                 id: user._id,
+                vendorId: user.vendorId || null,
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
@@ -219,7 +232,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 // ============================================
-// ✅ GET CURRENT USER (getMe)
+// GET CURRENT USER
 // ============================================
 export const getMe = async (req: any, res: Response) => {
     try {
@@ -235,6 +248,7 @@ export const getMe = async (req: any, res: Response) => {
             success: true,
             user: {
                 id: user._id,
+                vendorId: user.vendorId || null,
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
