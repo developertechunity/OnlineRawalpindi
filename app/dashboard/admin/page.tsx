@@ -6,7 +6,7 @@ import axios from 'axios';
 import styles from './admin.module.css';
 
 // ============================================
-// INTERFACES / TYPES
+// INTERFACES
 // ============================================
 interface Vendor {
     id: string;
@@ -31,9 +31,8 @@ interface WithdrawalRequest {
     amount: number;
     method: string;
     accountDetails: string;
-    status: 'pending' | 'approved' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected' | 'processed';
     requestedAt: string;
-    createdAt?: string;
 }
 
 interface SubscriptionRequest {
@@ -41,25 +40,10 @@ interface SubscriptionRequest {
     vendorId: string;
     vendorName: string;
     shopName: string;
-    planType: 'monthly' | 'yearly';
+    planType: string;
     amount: number;
     status: 'pending' | 'approved' | 'rejected';
     requestedAt: string;
-    createdAt?: string;
-}
-
-interface Rider {
-    id: string;
-    name: string;
-    email: string;
-    status: string;
-}
-
-interface Customer {
-    id: string;
-    name: string;
-    email: string;
-    status: string;
 }
 
 interface AdminEmployee {
@@ -105,21 +89,17 @@ export default function AdminDashboardPage() {
     // STATES
     // ============================================
     const [vendors, setVendors] = useState<Vendor[]>([]);
-    const [riders, setRiders] = useState<Rider[]>([]);
-    const [customers, setCustomers] = useState<Customer[]>([]);
+    const [riders, setRiders] = useState<any[]>([]);
+    const [customers, setCustomers] = useState<any[]>([]);
     const [adminEmployees, setAdminEmployees] = useState<AdminEmployee[]>([]);
     const [commissionTypes, setCommissionTypes] = useState<CommissionType[]>([]);
     const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-
-    // ============================================
-    // ✅ WITHDRAWAL & SUBSCRIPTION REQUESTS (Real Data)
-    // ============================================
     const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
     const [subscriptionRequests, setSubscriptionRequests] = useState<SubscriptionRequest[]>([]);
 
     // ============================================
-    // MODALS STATE
+    // MODALS
     // ============================================
     const [showAddCoupon, setShowAddCoupon] = useState(false);
     const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
@@ -127,17 +107,35 @@ export default function AdminDashboardPage() {
     const [showAddCommission, setShowAddCommission] = useState(false);
 
     // ============================================
-    // FORM STATES
+    // FORMS
     // ============================================
     const [employeeForm, setEmployeeForm] = useState({ name: '', email: '', role: 'Vendor Manager' });
     const [couponForm, setCouponForm] = useState({ code: '', type: 'percentage' as const, discount: '', expiry: '' });
     const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', audience: 'all' as const });
     const [commissionForm, setCommissionForm] = useState({ name: '', type: 'percentage' as const, value: '', description: '' });
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
+    const API_URL = 'http://localhost:5002';
 
     // ============================================
-    // ✅ FETCH WITHDRAWALS FROM API
+    // ✅ IMAGE URL HELPERS - FIXED (SIRF YAHI CHANGE)
+    // ============================================
+    
+const getImageUrl = (imagePath?: string) => {
+    if (!imagePath) return "";
+
+    if (imagePath.startsWith("http")) {
+        return imagePath;
+    }
+
+    const cleanPath = imagePath
+        .replace(/\\/g, "/")
+        .replace(/^\/+/, "")
+        .replace(/^uploads\/+/, "");
+
+    return `${API_URL}/uploads/${cleanPath}`;
+};
+    // ============================================
+    // FETCH WITHDRAWALS
     // ============================================
     const fetchWithdrawals = useCallback(async () => {
         try {
@@ -149,27 +147,15 @@ export default function AdminDashboardPage() {
             });
 
             if (response.data.success) {
-                // Format data for frontend
-                const formatted = response.data.withdrawals.map((w: any) => ({
-                    id: w._id || w.id,
-                    vendorId: w.vendorId,
-                    vendorName: w.vendorName,
-                    shopName: w.shopName,
-                    amount: w.amount,
-                    method: w.method,
-                    accountDetails: w.accountDetails,
-                    status: w.status || 'pending',
-                    requestedAt: w.createdAt ? new Date(w.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                }));
-                setWithdrawalRequests(formatted);
+                setWithdrawalRequests(response.data.withdrawals || []);
             }
         } catch (error: any) {
-            console.error('Error fetching withdrawals:', error.response?.data || error.message);
+            console.error('❌ Withdrawals error:', error.message);
         }
     }, [API_URL]);
 
     // ============================================
-    // ✅ FETCH SUBSCRIPTION REQUESTS FROM API
+    // FETCH SUBSCRIPTIONS
     // ============================================
     const fetchSubscriptions = useCallback(async () => {
         try {
@@ -181,25 +167,15 @@ export default function AdminDashboardPage() {
             });
 
             if (response.data.success) {
-                const formatted = response.data.requests.map((s: any) => ({
-                    id: s._id || s.id,
-                    vendorId: s.vendorId,
-                    vendorName: s.vendorName,
-                    shopName: s.shopName,
-                    planType: s.planType || 'monthly',
-                    amount: s.amount || (s.planType === 'monthly' ? 1000 : 10000),
-                    status: s.status || 'pending',
-                    requestedAt: s.createdAt ? new Date(s.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                }));
-                setSubscriptionRequests(formatted);
+                setSubscriptionRequests(response.data.requests || []);
             }
         } catch (error: any) {
-            console.error('Error fetching subscriptions:', error.response?.data || error.message);
+            console.error('❌ Subscriptions error:', error.message);
         }
     }, [API_URL]);
 
     // ============================================
-    // FETCH DATA FROM BACKEND
+    // LOAD ALL DATA
     // ============================================
     const loadAllDashboardData = useCallback(async () => {
         try {
@@ -212,42 +188,29 @@ export default function AdminDashboardPage() {
 
             const headers = { Authorization: `Bearer ${token}` };
 
-            // 1. Vendors
-            const resVendors = await axios.get(`${API_URL}/api/auth/vendors`, { headers });
-            if (resVendors?.data?.success) setVendors(resVendors.data.vendors);
+            const [vendorsRes, ridersRes, customersRes, employeesRes, commissionsRes, couponsRes, announcementsRes] = await Promise.all([
+                axios.get(`${API_URL}/api/auth/vendors`, { headers }),
+                axios.get(`${API_URL}/api/auth/riders`, { headers }),
+                axios.get(`${API_URL}/api/auth/customers`, { headers }),
+                axios.get(`${API_URL}/api/auth/employees`, { headers }),
+                axios.get(`${API_URL}/api/auth/commissions`, { headers }),
+                axios.get(`${API_URL}/api/auth/coupons`, { headers }),
+                axios.get(`${API_URL}/api/auth/announcements`, { headers })
+            ]);
 
-            // 2. Riders
-            const resRiders = await axios.get(`${API_URL}/api/auth/riders`, { headers });
-            if (resRiders?.data?.success) setRiders(resRiders.data.riders);
+            if (vendorsRes.data?.success) setVendors(vendorsRes.data.vendors || []);
+            if (ridersRes.data?.success) setRiders(ridersRes.data.riders || []);
+            if (customersRes.data?.success) setCustomers(customersRes.data.customers || []);
+            if (employeesRes.data?.success) setAdminEmployees(employeesRes.data.employees || []);
+            if (commissionsRes.data?.success) setCommissionTypes(commissionsRes.data.commissions || []);
+            if (couponsRes.data?.success) setCoupons(couponsRes.data.coupons || []);
+            if (announcementsRes.data?.success) setAnnouncements(announcementsRes.data.announcements || []);
 
-            // 3. Customers
-            const resCustomers = await axios.get(`${API_URL}/api/auth/customers`, { headers });
-            if (resCustomers?.data?.success) setCustomers(resCustomers.data.customers);
-
-            // 4. Employees
-            const resEmployees = await axios.get(`${API_URL}/api/auth/employees`, { headers });
-            if (resEmployees?.data?.success) setAdminEmployees(resEmployees.data.employees);
-
-            // 5. Commissions
-            const resCommissions = await axios.get(`${API_URL}/api/auth/commissions`, { headers });
-            if (resCommissions?.data?.success) setCommissionTypes(resCommissions.data.commissions);
-
-            // 6. Coupons
-            const resCoupons = await axios.get(`${API_URL}/api/auth/coupons`, { headers });
-            if (resCoupons?.data?.success) setCoupons(resCoupons.data.coupons);
-
-            // 7. Announcements
-            const resAnnouncements = await axios.get(`${API_URL}/api/auth/announcements`, { headers });
-            if (resAnnouncements?.data?.success) setAnnouncements(resAnnouncements.data.announcements);
-
-            // ✅ 8. Withdrawals (Real API)
             await fetchWithdrawals();
-
-            // ✅ 9. Subscriptions (Real API)
             await fetchSubscriptions();
 
         } catch (error: any) {
-            console.error("Error loading dashboard data:", error.response?.data || error.message);
+            console.error("Error loading dashboard data:", error.message);
         } finally {
             setLoading(false);
         }
@@ -285,9 +248,9 @@ export default function AdminDashboardPage() {
     }, [API_URL, loadAllDashboardData]);
 
     // ============================================
-    // ✅ WITHDRAWAL REQUEST HANDLERS
+    // WITHDRAWAL STATUS UPDATE
     // ============================================
-    const handleWithdrawalStatus = useCallback(async (requestId: string, status: 'approved' | 'rejected') => {
+    const handleWithdrawalStatus = useCallback(async (requestId: string, status: 'approved' | 'rejected' | 'processed') => {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.put(
@@ -297,8 +260,7 @@ export default function AdminDashboardPage() {
             );
             if (response.data.success) {
                 alert(`✅ Withdrawal ${status} successfully!`);
-                // Refresh withdrawals
-                await fetchWithdrawals();
+                fetchWithdrawals();
             }
         } catch (error: any) {
             alert(`❌ Error updating withdrawal: ${error.response?.data?.message || error.message}`);
@@ -306,7 +268,7 @@ export default function AdminDashboardPage() {
     }, [API_URL, fetchWithdrawals]);
 
     // ============================================
-    // ✅ SUBSCRIPTION REQUEST HANDLERS
+    // SUBSCRIPTION STATUS UPDATE
     // ============================================
     const handleSubscriptionStatus = useCallback(async (requestId: string, status: 'approved' | 'rejected') => {
         try {
@@ -318,8 +280,7 @@ export default function AdminDashboardPage() {
             );
             if (response.data.success) {
                 alert(`✅ Subscription ${status} successfully!`);
-                // Refresh subscriptions
-                await fetchSubscriptions();
+                fetchSubscriptions();
             }
         } catch (error: any) {
             alert(`❌ Error updating subscription: ${error.response?.data?.message || error.message}`);
@@ -472,27 +433,6 @@ export default function AdminDashboardPage() {
         } catch (error) {
             alert('❌ Failed to delete announcement');
         }
-    };
-
-    // ============================================
-    // IMAGE URL HELPERS
-    // ============================================
-    const getImageUrl = (path: string | undefined) => {
-        if (!path) return null;
-        if (path.startsWith('http')) return path;
-        let filename = path;
-        if (path.includes('/uploads/')) {
-            filename = path.split('/uploads/').pop() || path;
-        } else if (path.includes('uploads/')) {
-            filename = path.split('uploads/').pop() || path;
-        }
-        if (filename.includes('/')) {
-            filename = filename.split('/').pop() || filename;
-        }
-        if (filename.startsWith('/')) {
-            filename = filename.substring(1);
-        }
-        return `${API_URL}/uploads/${filename}`;
     };
 
     // ============================================
@@ -697,9 +637,9 @@ export default function AdminDashboardPage() {
     }, [showVendorDetail, selectedVendor, updateVendorStatus, API_URL]);
 
     // ============================================
-    // ✅ WITHDRAWAL REQUESTS TABLE
+    // RENDER FUNCTIONS
     // ============================================
-    const renderWithdrawalRequests = useCallback(() => (
+    const renderWithdrawalRequests = () => (
         <div className={styles.section}>
             <h2 className={styles.sectionTitle}>💳 Withdrawal Requests</h2>
             <div className={styles.tableContainer}>
@@ -734,6 +674,7 @@ export default function AdminDashboardPage() {
                                         <span className={`${styles.statusBadge} ${
                                             w.status === 'approved' ? styles.statusApproved :
                                             w.status === 'rejected' ? styles.statusRejected :
+                                            w.status === 'processed' ? styles.statusApproved :
                                             styles.statusPending
                                         }`}>
                                             {w.status.charAt(0).toUpperCase() + w.status.slice(1)}
@@ -765,12 +706,9 @@ export default function AdminDashboardPage() {
                 </table>
             </div>
         </div>
-    ), [withdrawalRequests, handleWithdrawalStatus]);
+    );
 
-    // ============================================
-    // ✅ SUBSCRIPTION REQUESTS TABLE
-    // ============================================
-    const renderSubscriptionRequests = useCallback(() => (
+    const renderSubscriptionRequests = () => (
         <div className={styles.section}>
             <h2 className={styles.sectionTitle}>📋 Subscription Upgrade Requests</h2>
             <div className={styles.tableContainer}>
@@ -840,12 +778,9 @@ export default function AdminDashboardPage() {
                 </table>
             </div>
         </div>
-    ), [subscriptionRequests, handleSubscriptionStatus]);
+    );
 
-    // ============================================
-    // RENDER FUNCTIONS
-    // ============================================
-    const renderVendors = useCallback(() => (
+    const renderVendors = () => (
         <div className={styles.section}>
             <h2 className={styles.sectionTitle}>🏪 Vendor Management</h2>
             <div className={styles.tableContainer}>
@@ -913,9 +848,9 @@ export default function AdminDashboardPage() {
                 </table>
             </div>
         </div>
-    ), [vendors, updateVendorStatus]);
+    );
 
-    const renderAdminEmployees = useCallback(() => (
+    const renderAdminEmployees = () => (
         <div className={styles.section}>
             <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>👥 Admin Employees</h2>
@@ -937,9 +872,9 @@ export default function AdminDashboardPage() {
                 ))}
             </div>
         </div>
-    ), [adminEmployees, handleDeleteEmployee]);
+    );
 
-    const renderCommissionTypes = useCallback(() => (
+    const renderCommissionTypes = () => (
         <div className={styles.section}>
             <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>💰 Commission Rules</h2>
@@ -962,9 +897,9 @@ export default function AdminDashboardPage() {
                 ))}
             </div>
         </div>
-    ), [commissionTypes, handleDeleteCommission]);
+    );
 
-    const renderCoupons = useCallback(() => (
+    const renderCoupons = () => (
         <div className={styles.section}>
             <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>🎟️ Coupons</h2>
@@ -986,9 +921,9 @@ export default function AdminDashboardPage() {
                 ))}
             </div>
         </div>
-    ), [coupons, handleDeleteCoupon]);
+    );
 
-    const renderAnnouncements = useCallback(() => (
+    const renderAnnouncements = () => (
         <div className={styles.section}>
             <div className={styles.sectionHeader}>
                 <h2 className={styles.sectionTitle}>📢 Announcements</h2>
@@ -1010,9 +945,9 @@ export default function AdminDashboardPage() {
                 </div>
             ))}
         </div>
-    ), [announcements, handleDeleteAnnouncement]);
+    );
 
-    const renderCustomers = useCallback(() => (
+    const renderCustomers = () => (
         <div className={styles.section}>
             <h2 className={styles.sectionTitle}>👥 Customers</h2>
             <div className={styles.tableContainer}>
@@ -1036,9 +971,9 @@ export default function AdminDashboardPage() {
                 </table>
             </div>
         </div>
-    ), [customers]);
+    );
 
-    const renderRiders = useCallback(() => (
+    const renderRiders = () => (
         <div className={styles.section}>
             <h2 className={styles.sectionTitle}>🛵 Riders</h2>
             <div className={styles.tableContainer}>
@@ -1062,12 +997,12 @@ export default function AdminDashboardPage() {
                 </table>
             </div>
         </div>
-    ), [riders]);
+    );
 
     // ============================================
     // MODALS FOR ADD
     // ============================================
-    const renderAddEmployeeModal = useCallback(() => {
+    const renderAddEmployeeModal = () => {
         if (!showAddEmployee) return null;
         return (
             <div className={styles.modalOverlay} onClick={() => setShowAddEmployee(false)}>
@@ -1097,9 +1032,9 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
         );
-    }, [showAddEmployee, employeeForm, handleAddEmployeeSubmit]);
+    };
 
-    const renderAddCouponModal = useCallback(() => {
+    const renderAddCouponModal = () => {
         if (!showAddCoupon) return null;
         return (
             <div className={styles.modalOverlay} onClick={() => setShowAddCoupon(false)}>
@@ -1130,9 +1065,9 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
         );
-    }, [showAddCoupon, couponForm, handleAddCouponSubmit]);
+    };
 
-    const renderAddAnnouncementModal = useCallback(() => {
+    const renderAddAnnouncementModal = () => {
         if (!showAddAnnouncement) return null;
         return (
             <div className={styles.modalOverlay} onClick={() => setShowAddAnnouncement(false)}>
@@ -1161,9 +1096,9 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
         );
-    }, [showAddAnnouncement, announcementForm, handleAddAnnouncementSubmit]);
+    };
 
-    const renderAddCommissionModal = useCallback(() => {
+    const renderAddCommissionModal = () => {
         if (!showAddCommission) return null;
         return (
             <div className={styles.modalOverlay} onClick={() => setShowAddCommission(false)}>
@@ -1194,7 +1129,7 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
         );
-    }, [showAddCommission, commissionForm, handleAddCommissionSubmit]);
+    };
 
     // ============================================
     // MAIN RENDER

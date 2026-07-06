@@ -7,9 +7,9 @@ export interface IProduct extends Document {
     stockQuantity: number;
     description: string;
     status: 'Active' | 'Out of Stock';
-    colors?: string[];      // ✅ Optional
-    sizes?: string[];       // ✅ Optional
-    images?: string[];      // ✅ Optional
+    colors?: string[];
+    sizes?: string[];
+    images?: string[];
 }
 
 const ProductSchema: Schema = new Schema({
@@ -19,9 +19,9 @@ const ProductSchema: Schema = new Schema({
     stockQuantity: { type: Number, required: true },
     description: { type: String, required: true },
     status: { type: String, enum: ['Active', 'Out of Stock'], default: 'Active' },
-    colors: { type: [String], default: [] },   // ✅ Optional - default empty
-    sizes: { type: [String], default: [] },    // ✅ Optional - default empty
-    images: { type: [String], default: [] }    // ✅ Optional - default empty
+    colors: { type: [String], default: [] },
+    sizes: { type: [String], default: [] },
+    images: { type: [String], default: [] }
 }, { timestamps: true });
 
 export default mongoose.model<IProduct>('Product', ProductSchema);

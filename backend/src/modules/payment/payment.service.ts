@@ -1,7 +1,6 @@
 // backend/src/modules/payment/payment.service.ts
 
-import axios from 'axios';
-import crypto from 'crypto';
+import mongoose from 'mongoose';
 import Payment from './payment.model.js';
 import User from '../auth/User.model.js';
 import Order from '../order/Order.model.js';
@@ -9,7 +8,7 @@ import Order from '../order/Order.model.js';
 export class PaymentService {
 
     // ============================================
-    // 1. CREATE PAYMENT - For All Roles
+    // 1. CREATE PAYMENT
     // ============================================
     static async createPayment(
         orderId: string,
@@ -24,9 +23,8 @@ export class PaymentService {
         subscriptionPlan?: 'monthly' | 'yearly'
     ): Promise<any> {
         try {
-            // ===== CALCULATE FEES =====
-            const commissionAmount = amount * 0.01;      // 1% Platform fee
-            const riderDeliveryFee = amount * 0.05;      // 5% Rider fee (if delivery)
+            const commissionAmount = amount * 0.01;
+            const riderDeliveryFee = amount * 0.05;
             const vendorAmount = amount - commissionAmount - riderDeliveryFee;
             
             let result;
@@ -34,28 +32,20 @@ export class PaymentService {
 
             switch (method) {
                 case 'easypaisa':
-                    if (!customerPhone) {
-                        throw new Error('Customer phone required for EasyPaisa');
-                    }
+                    if (!customerPhone) throw new Error('Customer phone required for EasyPaisa');
                     result = await this.processEasyPaisa(amount, orderId, customerId, vendorId, customerPhone);
                     break;
-
                 case 'jazzcash':
-                    if (!customerPhone) {
-                        throw new Error('Customer phone required for JazzCash');
-                    }
+                    if (!customerPhone) throw new Error('Customer phone required for JazzCash');
                     result = await this.processJazzCash(amount, orderId, customerId, vendorId, customerPhone);
                     break;
-
                 case 'cod':
                     result = await this.processCOD(orderId, customerId, vendorId, riderId);
                     break;
-
                 default:
                     throw new Error('Invalid payment method');
             }
 
-            // ===== SAVE PAYMENT RECORD =====
             const payment = await Payment.create({
                 orderId,
                 orderNumber,
@@ -79,7 +69,6 @@ export class PaymentService {
                 ...(method === 'cod' && { codCollectedBy: riderId })
             });
 
-            // ===== UPDATE VENDOR BALANCE (if success) =====
             if (payment.status === 'success') {
                 await User.findByIdAndUpdate(vendorId, {
                     $inc: { availableBalance: vendorAmount }
@@ -105,7 +94,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 2. PROCESS EASYPAISA PAYMENT
+    // 2. PROCESS EASYPAISA
     // ============================================
     private static async processEasyPaisa(
         amount: number,
@@ -120,7 +109,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 3. PROCESS JAZZCASH PAYMENT
+    // 3. PROCESS JAZZCASH
     // ============================================
     private static async processJazzCash(
         amount: number,
@@ -135,7 +124,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 4. PROCESS COD PAYMENT
+    // 4. PROCESS COD
     // ============================================
     private static async processCOD(
         orderId: string,
@@ -154,7 +143,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 5. CONFIRM COD - FOR RIDER
+    // 5. CONFIRM COD
     // ============================================
     static async confirmCOD(orderId: string, riderId: string, amount: number): Promise<any> {
         try {
@@ -166,12 +155,10 @@ export class PaymentService {
             payment.paymentData = { ...payment.paymentData, collectedAt: new Date(), collectedBy: riderId, amount };
             await payment.save();
 
-            // Update vendor balance
             await User.findByIdAndUpdate(payment.vendorId, {
                 $inc: { availableBalance: payment.vendorAmount }
             });
 
-            // Update rider earnings
             await User.findByIdAndUpdate(riderId, {
                 $inc: { totalEarnings: payment.riderDeliveryFee }
             });
@@ -184,7 +171,28 @@ export class PaymentService {
     }
 
     // ============================================
-    // 6. VENDOR SUBSCRIPTION PAYMENT
+    // 6. DEPOSIT COD TO ADMIN
+    // ============================================
+    static async depositCODToAdmin(orderId: string, riderId: string, adminId: string): Promise<any> {
+        try {
+            const payment = await Payment.findOne({ orderId, method: 'cod' });
+            if (!payment) throw new Error('COD payment not found');
+            if (payment.codDepositedToAdmin) throw new Error('COD already deposited');
+
+            payment.codDepositedToAdmin = true;
+            payment.codDepositDate = new Date();
+            payment.adminId = adminId;
+            await payment.save();
+
+            return { success: true, message: 'COD deposited to admin' };
+        } catch (error: any) {
+            console.error('Deposit COD Error:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    // ============================================
+    // 7. VENDOR SUBSCRIPTION - FIXED
     // ============================================
     static async processVendorSubscription(
         vendorId: string,
@@ -194,8 +202,11 @@ export class PaymentService {
         try {
             const transactionId = `SUB${Date.now()}${Math.floor(Math.random() * 1000)}`;
             
+            // ✅ FIXED: Properly use mongoose.Types.ObjectId
+            const orderId = new mongoose.Types.ObjectId();
+            
             const payment = await Payment.create({
-                orderId: new mongoose.Types.ObjectId(),
+                orderId: orderId,
                 orderNumber: `SUB-${Date.now()}`,
                 customerId: vendorId,
                 vendorId: vendorId,
@@ -213,7 +224,6 @@ export class PaymentService {
                 notes: `Vendor subscription: ${plan} plan`
             });
 
-            // Update vendor subscription
             await User.findByIdAndUpdate(vendorId, {
                 subscriptionPlan: plan,
                 subscriptionStatus: 'active',
@@ -228,7 +238,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 7. GET PAYMENTS BY ROLE
+    // 8. GET PAYMENTS BY ROLE
     // ============================================
     static async getPaymentsByRole(userId: string, role: string, filters: any = {}): Promise<any> {
         try {
@@ -253,7 +263,6 @@ export class PaymentService {
                 .populate('vendorId', 'name email shopName')
                 .populate('riderId', 'name email');
 
-            // Summary for each role
             const summary = {
                 totalPayments: payments.length,
                 totalAmount: payments.reduce((s, p) => s + p.amount, 0),
@@ -272,13 +281,16 @@ export class PaymentService {
     }
 
     // ============================================
-    // 8. ADMIN STATISTICS
+    // 9. ADMIN STATISTICS
     // ============================================
     static async getAdminStatistics(): Promise<any> {
         try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
             const [totalPayments, todayPayments, pendingCOD, totalRevenue, totalCommission, paymentsByMethod] = await Promise.all([
                 Payment.countDocuments(),
-                Payment.countDocuments({ createdAt: { $gte: new Date(new Date().setHours(0,0,0,0)) } }),
+                Payment.countDocuments({ createdAt: { $gte: today } }),
                 Payment.countDocuments({ method: 'cod', status: 'pending' }),
                 Payment.aggregate([{ $match: { status: 'success' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
                 Payment.aggregate([{ $match: { status: 'success' } }, { $group: { _id: null, total: { $sum: '$commissionAmount' } } }]),
@@ -303,7 +315,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 9. PROCESS REFUND
+    // 10. PROCESS REFUND
     // ============================================
     static async processRefund(paymentId: string, adminId: string, reason: string, amount?: number): Promise<any> {
         try {
@@ -319,7 +331,6 @@ export class PaymentService {
             payment.refundApprovedAt = new Date();
             await payment.save();
 
-            // Reverse vendor balance
             await User.findByIdAndUpdate(payment.vendorId, {
                 $inc: { availableBalance: -payment.vendorAmount }
             });

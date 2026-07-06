@@ -1,17 +1,13 @@
-// backend/src/modules/vendor/vendor.middleware.ts
-
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { Request, Response, NextFunction } from 'express';
 
-// Ensure upload directory exists
 const uploadDir = './uploads';
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, uploadDir);
@@ -22,7 +18,6 @@ const storage = multer.diskStorage({
     }
 });
 
-// File filter - only images
 const fileFilter = (req: any, file: any, cb: any) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
     if (allowedTypes.includes(file.mimetype)) {
@@ -32,16 +27,14 @@ const fileFilter = (req: any, file: any, cb: any) => {
     }
 };
 
-// Create multer instance
 export const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit per file
+        fileSize: 5 * 1024 * 1024
     }
 });
 
-// Error handler for multer
 export const handleMulterErrors = (err: any, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {

@@ -10,7 +10,7 @@ export interface IEmployee extends Document {
 const EmployeeSchema: Schema = new Schema({
     vendorId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     employeeName: { type: String, required: true },
-    role: { type: String, required: true }, // e.g., Inventory Manager
+    role: { type: String, required: true },
     email: { type: String, required: true }
 }, { timestamps: true });
 

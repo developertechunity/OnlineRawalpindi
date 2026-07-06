@@ -1,6 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from './User.model.js';
+import User from '../auth/User.model.js';
+
+interface DecodedToken {
+    id: string;
+    role: string;
+    iat: number;
+    exp: number;
+}
+
+declare global {
+    namespace Express {
+        interface Request {
+            user?: any;
+            userId?: string;
+        }
+    }
+}
 
 export const protect = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -13,39 +29,38 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
         if (!token) {
             return res.status(401).json({ 
                 success: false, 
-                message: 'Not authorized, no token' 
+                message: 'Access denied. No validation token found.' 
             });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123') as any;
-        
-        const user = await User.findById(decoded.userId).select('-password');
-        if (!user) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key') as DecodedToken;
+
+        const currentUser = await User.findById(decoded.id).select('-password');
+        if (!currentUser) {
             return res.status(401).json({ 
                 success: false, 
-                message: 'User not found' 
+                message: 'The account owning this authentication token no longer exists.' 
             });
         }
 
-        (req as any).user = user;
-        (req as any).userId = user._id;
-        
+        req.user = currentUser;
+        req.userId = currentUser._id.toString();
         next();
-    } catch (error) {
+    } catch (error: any) {
         return res.status(401).json({ 
             success: false, 
-            message: 'Not authorized, token failed' 
+            message: 'Invalid or expired authorization token.',
+            error: error.message 
         });
     }
 };
 
 export const restrictTo = (...roles: string[]) => {
     return (req: Request, res: Response, next: NextFunction) => {
-        const user = (req as any).user;
-        if (!user || !roles.includes(user.role)) {
+        if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({
                 success: false,
-                message: 'You do not have permission to perform this action'
+                message: 'Forbidden. You do not have permission to execute this administrative action.'
             });
         }
         next();
