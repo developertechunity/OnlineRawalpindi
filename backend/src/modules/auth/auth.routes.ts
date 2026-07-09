@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import User from './User.model.js';
 import { protect } from './auth.middleware.js';
-import { login, register, getMe } from './auth.controller.js';
+import { login, register, getMe, updateVendorId } from './auth.controller.js';
 
 const router = express.Router();
 
@@ -66,6 +66,9 @@ router.post('/login', login);
 
 // ✅ Get Current User
 router.get('/me', protect, getMe);
+
+// ✅ UPDATE VENDOR ID (Fix padding issue)
+router.put('/vendor/:id/vendor-id', updateVendorId);
 
 // ============================================
 // ✅ TEMPORARY: Create Admin User

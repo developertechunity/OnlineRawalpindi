@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import User from './User.model.js';
 
 // ============================================
-// ✅ Generate Unique Vendor ID - FIXED
+// ✅ Generate Unique Vendor ID - WITHOUT PADDING (V-1, V-2, V-3...)
 // ============================================
 const getNextVendorId = async (): Promise<string> => {
     // ✅ Sab se bada vendorId find karo
@@ -16,17 +16,18 @@ const getNextVendorId = async (): Promise<string> => {
     .select('vendorId');
     
     if (!lastVendor || !lastVendor.vendorId) {
-        return 'V-0001';
+        return 'V-1';
     }
     
     const match = lastVendor.vendorId.match(/V-(\d+)/);
     if (!match) {
-        return 'V-0001';
+        return 'V-1';
     }
     
     const lastNumber = parseInt(match[1]);
     const nextNumber = lastNumber + 1;
-    return `V-${String(nextNumber).padStart(4, '0')}`;
+    // ✅ WITHOUT PADDING - Sirf V-1, V-2, V-3...
+    return `V-${nextNumber}`;
 };
 
 // ============================================
@@ -96,7 +97,7 @@ export const register = async (req: Request, res: Response) => {
         };
 
         if (role === 'vendor') {
-            // ✅ Generate unique vendorId
+            // ✅ Generate unique vendorId (WITHOUT PADDING)
             const vendorId = await getNextVendorId();
             
             userData.vendorId = vendorId;
@@ -263,6 +264,45 @@ export const getMe = async (req: any, res: Response) => {
         res.status(500).json({
             success: false,
             message: error.message
+        });
+    }
+};
+
+// ============================================
+// ✅ UPDATE VENDOR ID (Fix padding issue)
+// ============================================
+export const updateVendorId = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { vendorId } = req.body;
+        
+        const vendor = await User.findByIdAndUpdate(
+            id,
+            { vendorId },
+            { new: true }
+        );
+        
+        if (!vendor) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Vendor not found' 
+            });
+        }
+        
+        console.log(`✅ Vendor ID updated: ${vendor.name} -> ${vendorId}`);
+        
+        res.json({ 
+            success: true, 
+            vendor: {
+                id: vendor._id,
+                vendorId: vendor.vendorId
+            }
+        });
+    } catch (error: any) {
+        console.error('❌ Update vendor ID error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
         });
     }
 };

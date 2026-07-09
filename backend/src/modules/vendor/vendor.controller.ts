@@ -5,10 +5,11 @@ import User from '../auth/User.model.js';
 import Product from './Product.model.js';
 import Employee from './Employee.model.js';
 import Withdrawal from './Withdrawal.model.js';
+import SubscriptionRequest from './SubscriptionRequest.model.js';
+import BusinessType from './BusinessType.model.js';
+import BusinessSubtype from './BusinessSubtype.model.js';
+import Business from './Business.model.js';
 
-// ============================================
-// 1. DASHBOARD DATA
-// ============================================
 // ============================================
 // 1. DASHBOARD DATA
 // ============================================
@@ -28,13 +29,49 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             return res.status(404).json({ success: false, message: 'Vendor not found' });
         }
 
+        const businesses = await Business.find({ vendorId })
+            .populate('businessTypeId', 'name')
+            .sort({ isDefault: -1, createdAt: -1 });
+
+        console.log(`📋 [VENDOR] Found ${businesses.length} businesses for vendor ${vendorId}`);
+
+        const defaultBusiness = businesses.find(b => b.isDefault);
+        const selectedBusinessId = defaultBusiness?._id || (businesses[0]?._id || '');
+
+        if (businesses.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    totalEarnings: vendor.totalEarnings || 0,
+                    availableBalance: vendor.availableBalance || 0,
+                    pendingWithdrawals: vendor.pendingWithdrawals || 0,
+                    totalOrders: vendor.totalOrdersCount || 0,
+                    totalProducts: 0,
+                    pendingOrders: 0,
+                    productsList: [],
+                    employeesList: [],
+                    businesses: [],
+                    selectedBusinessId: '',
+                    subscription: {
+                        plan: vendor.subscriptionPlan || 'free',
+                        status: vendor.subscriptionStatus || 'active',
+                        daysRemaining: 0,
+                        showTrialWarning: false,
+                        hasRequestedExtension: vendor.hasRequestedExtension || false,
+                        isApproved: false,
+                        isPendingApproval: false,
+                        endDate: null
+                    }
+                }
+            });
+        }
+
         const [productsCount, productsList, employeesList] = await Promise.all([
             Product.countDocuments({ vendorId }),
             Product.find({ vendorId }).select('_id productName price stockQuantity description status colors sizes images'),
             Employee.find({ vendorId }).select('_id employeeName role email')
         ]);
 
-        // ✅ TRIAL DAYS CALCULATE KARO
         let trialDaysRemaining = 0;
         let showTrialWarning = false;
 
@@ -44,12 +81,10 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             const diffTime = trialEnd.getTime() - now.getTime();
             trialDaysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
-            // ✅ Agar trial end date past me hai toh 0 karo
             if (trialDaysRemaining < 0) {
                 trialDaysRemaining = 0;
             }
 
-            // ✅ Agar 3 days ya less bache hain toh warning show karo
             if (trialDaysRemaining <= 3 && trialDaysRemaining > 0) {
                 showTrialWarning = true;
             }
@@ -74,6 +109,24 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             role: e.role
         }));
 
+        const formattedBusinesses = businesses.map((b: any) => ({
+            _id: b._id,
+            businessName: b.businessName,
+            businessTypeId: b.businessTypeId,
+            status: b.status,
+            isDefault: b.isDefault,
+            businessEmail: b.businessEmail,
+            phone: b.phone,
+            addressCity: b.addressCity,
+            addressCountry: b.addressCountry,
+            subscriptionPlan: b.subscriptionPlan,
+            subscriptionStatus: b.subscriptionStatus
+        }));
+
+        const hasApprovedBusiness = businesses.some(b => b.status === 'approved');
+        const isApproved = vendor.subscriptionStatus === 'active' && vendor.subscriptionPlan !== 'free';
+        const isPendingApproval = vendor.subscriptionStatus === 'pending_approval';
+
         return res.status(200).json({
             success: true,
             data: {
@@ -85,12 +138,18 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
                 pendingOrders: 0,
                 productsList: formattedProducts,
                 employeesList: formattedEmployees,
+                businesses: formattedBusinesses,
+                selectedBusinessId: selectedBusinessId,
+                hasApprovedBusiness: hasApprovedBusiness,
                 subscription: {
                     plan: vendor.subscriptionPlan || 'free',
                     status: vendor.subscriptionStatus || 'active',
                     daysRemaining: trialDaysRemaining > 0 ? trialDaysRemaining : 0,
                     showTrialWarning,
-                    hasRequestedExtension: vendor.hasRequestedExtension || false
+                    hasRequestedExtension: vendor.hasRequestedExtension || false,
+                    isApproved: isApproved,
+                    isPendingApproval: isPendingApproval,
+                    endDate: vendor.subscriptionExpiryDate || vendor.subscriptionEndDate || null
                 }
             }
         });
@@ -99,6 +158,7 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
         return res.status(500).json({ success: false, message: error.message });
     }
 };
+
 // ============================================
 // 2. GET ALL PRODUCTS
 // ============================================
@@ -394,63 +454,355 @@ export const deleteEmployee = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 8. UPGRADE SUBSCRIPTION - FIXED
+// BUSINESS REGISTRATION - GET BUSINESS TYPES
 // ============================================
-export const upgradeSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
+export const getBusinessTypes = async (req: any, res: Response): Promise<any> => {
     try {
-        const vendorId = req.userId || req.user?._id;
-
-        console.log('📋 [VENDOR] Upgrade Subscription - vendorId:', vendorId);
-        console.log('📋 [VENDOR] Request body:', req.body);
-
-        if (!vendorId) {
-            return res.status(401).json({
-                success: false,
-                message: 'Unauthorized: User ID not found'
-            });
-        }
-
-        const { plan } = req.body;
-
-        if (!plan || plan === 'free') {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid subscription plan choice'
-            });
-        }
-
-        // Check if vendor exists
-        const vendor = await User.findById(vendorId);
-        if (!vendor) {
-            return res.status(404).json({
-                success: false,
-                message: 'Vendor not found'
-            });
-        }
-
-        // Update subscription
-        await User.findByIdAndUpdate(vendorId, {
-            subscriptionPlan: plan,
-            subscriptionStatus: 'pending_approval'
-        });
-
-        console.log(`✅ [VENDOR] Subscription request sent: ${plan} plan`);
-
+        const types = await BusinessType.find({ isActive: true }).sort({ name: 1 });
         return res.status(200).json({
             success: true,
-            message: '⏳ Subscription request sent for admin approval!'
+            data: types
         });
     } catch (error: any) {
-        console.error('❌ [VENDOR] Upgrade subscription error:', error);
-        return res.status(500).json({ 
-            success: false, 
-            message: error.message || 'Failed to process subscription request'
-        });
+        console.error('Get Business Types Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 // ============================================
-// 9. REQUEST TRIAL EXTENSION - FIXED
+// BUSINESS REGISTRATION - GET SUBTYPES BY TYPE
+// ============================================
+export const getSubtypesByType = async (req: any, res: Response): Promise<any> => {
+    try {
+        const { typeId } = req.params;
+        const subtypes = await BusinessSubtype.find({ 
+            businessTypeId: typeId,
+            isActive: true 
+        }).sort({ name: 1 });
+        
+        return res.status(200).json({
+            success: true,
+            data: subtypes
+        });
+    } catch (error: any) {
+        console.error('Get Subtypes Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// BUSINESS REGISTRATION - CREATE BUSINESS (FIXED - Free Trial included)
+// ============================================
+// backend/src/modules/vendor/vendor.controller.ts
+
+export const registerBusiness = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        console.log('📋 [BACKEND] Register Business - vendorId:', vendorId);
+        console.log('📋 [BACKEND] Request Body:', req.body);
+
+        const {
+            businessTypeId,
+            businessName,
+            businessNtn,
+            businessEmail,
+            phone,
+            whatsapp,
+            landline,
+            addressCity,
+            addressCountry,
+            mapLocation,
+            open24_7,
+            businessTiming,
+            subtypes,
+            otherSubtype,
+            socialLinks,
+            subscriptionPlan,
+            paymentMethod,
+            accountNumber,
+            accountHolderName,
+            phoneNumber,
+            bankName,
+            notes
+        } = req.body;
+
+        if (!businessTypeId || !businessName || !businessEmail || !phone || !addressCity || !addressCountry) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please fill all required fields (Business Type, Name, Email, Phone, City, Country)'
+            });
+        }
+
+        const files = req.files as any;
+        let businessLogo = '';
+        let coverImage = '';
+        let galleryImages: string[] = [];
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+        if (files) {
+            if (files.businessLogo && files.businessLogo[0]) {
+                businessLogo = `${baseUrl}/${files.businessLogo[0].path.replace(/\\/g, '/')}`;
+            }
+            if (files.coverImage && files.coverImage[0]) {
+                coverImage = `${baseUrl}/${files.coverImage[0].path.replace(/\\/g, '/')}`;
+            }
+            if (files.galleryImages) {
+                galleryImages = files.galleryImages.map((file: any) => 
+                    `${baseUrl}/${file.path.replace(/\\/g, '/')}`
+                );
+            }
+        }
+
+        let parsedTiming = {};
+        try {
+            parsedTiming = businessTiming ? JSON.parse(businessTiming) : {};
+        } catch (e) {
+            parsedTiming = {};
+        }
+
+        let parsedSubtypes: string[] = [];
+        try {
+            parsedSubtypes = subtypes ? JSON.parse(subtypes) : [];
+        } catch (e) {
+            parsedSubtypes = [];
+        }
+
+        let parsedSocialLinks: string[] = [];
+        try {
+            parsedSocialLinks = socialLinks ? JSON.parse(socialLinks) : [];
+        } catch (e) {
+            parsedSocialLinks = [];
+        }
+
+        const existingBusiness = await Business.findOne({ vendorId, isDefault: true });
+        const isDefault = !existingBusiness;
+
+        // ✅ Create Business
+        const business = await Business.create({
+            vendorId,
+            businessTypeId,
+            businessName: businessName.trim(),
+            businessNtn: businessNtn || '',
+            businessEmail: businessEmail.trim(),
+            phone: phone.trim(),
+            whatsapp: whatsapp || '',
+            landline: landline || '',
+            addressCity: addressCity.trim(),
+            addressCountry: addressCountry.trim(),
+            mapLocation: mapLocation || '',
+            open24_7: open24_7 === 'true' || open24_7 === true,
+            businessTiming: parsedTiming,
+            businessLogo,
+            coverImage,
+            galleryImages,
+            socialLinks: parsedSocialLinks,
+            subtypes: parsedSubtypes,
+            otherSubtype: otherSubtype || '',
+            isDefault
+        });
+
+        console.log('✅ [BACKEND] Business created:', business._id);
+
+        const vendor = await User.findById(vendorId);
+
+        // ✅ ✅ ✅ FIX: CHECK IF PLAN IS FREE OR PAID
+        if (subscriptionPlan === 'free') {
+            // ✅ FREE TRIAL: DIRECTLY APPROVE - No request needed
+            console.log(`📋 [BACKEND] Free Trial - Directly approving business: ${business.businessName}`);
+            
+            // Update Business
+            business.status = 'approved';
+            business.subscriptionPlan = 'free';
+            business.subscriptionStatus = 'approved';
+            
+            // Set trial end date (30 days from now)
+            const trialEndDate = new Date();
+            trialEndDate.setDate(trialEndDate.getDate() + 30);
+            business.subscriptionEnd = trialEndDate;
+            business.subscriptionStart = new Date();
+            await business.save();
+            console.log(`✅ Business APPROVED: ${business.businessName} -> Free Trial, ends: ${trialEndDate}`);
+
+            // Update Vendor
+            if (vendor) {
+                vendor.subscriptionPlan = 'free';
+                vendor.subscriptionStatus = 'active';
+                vendor.trialEndDate = trialEndDate;
+                vendor.trialStartDate = new Date();
+                vendor.hasRequestedExtension = false;
+                await vendor.save();
+                console.log(`✅ Vendor UPDATED: ${vendor.name} -> Free Trial`);
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: '✅ Business registered successfully! Free Trial is now active. You have 30 days.',
+                data: {
+                    businessId: business._id,
+                    businessName: business.businessName,
+                    status: business.status,
+                    subscriptionPlan: 'free',
+                    subscriptionStatus: 'approved',
+                    trialEndDate: trialEndDate
+                }
+            });
+
+        } else {
+            // ✅ PAID PLANS (Monthly/Yearly): Need admin approval
+            console.log(`📋 [BACKEND] Paid Plan - Creating subscription request for: ${business.businessName}`);
+
+            // Update business status
+            business.status = 'pending';
+            business.subscriptionPlan = subscriptionPlan;
+            business.subscriptionStatus = 'pending';
+            await business.save();
+
+            // Check for existing pending request
+            const existingRequest = await SubscriptionRequest.findOne({
+                businessId: business._id,
+                status: 'pending'
+            });
+
+            if (existingRequest) {
+                console.log(`⚠️ Business ${business._id} already has a pending request`);
+                return res.status(201).json({
+                    success: true,
+                    message: 'Business registered successfully! Subscription request already pending.',
+                    data: {
+                        businessId: business._id,
+                        businessName: business.businessName,
+                        status: business.status,
+                        subscriptionStatus: business.subscriptionStatus
+                    }
+                });
+            }
+
+            // Create subscription request for paid plans
+            const subscriptionRequestData = {
+                vendorId,
+                businessId: business._id,
+                businessName: business.businessName,
+                vendorName: vendor?.name || 'Vendor',
+                vendorEmail: vendor?.email || req.user?.email || 'vendor@email.com',
+                shopName: business.businessName,
+                planType: subscriptionPlan,
+                amount: subscriptionPlan === 'yearly' ? 10000 : 1000,
+                paymentMethod: paymentMethod || 'easypaisa',
+                accountNumber: accountNumber || 'N/A',
+                accountHolderName: accountHolderName || vendor?.name || 'N/A',
+                phoneNumber: phoneNumber || phone || '',
+                bankName: bankName || '',
+                notes: notes || '',
+                status: 'pending',
+                requestedAt: new Date()
+            };
+
+            console.log('📋 Subscription Request Data:', subscriptionRequestData);
+
+            const subscriptionRequest = await SubscriptionRequest.create(subscriptionRequestData);
+            console.log(`✅ Subscription request created for ${business.businessName}: ${subscriptionPlan} plan`);
+
+            return res.status(201).json({
+                success: true,
+                message: `✅ Business registered successfully! ${subscriptionPlan} plan request sent to admin for approval.`,
+                data: {
+                    businessId: business._id,
+                    businessName: business.businessName,
+                    status: business.status,
+                    subscriptionStatus: business.subscriptionStatus,
+                    requestId: subscriptionRequest._id
+                }
+            });
+        }
+
+    } catch (error: any) {
+        console.error('❌ [BACKEND] Register Business Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to register business'
+        });
+    }
+};
+// ============================================
+// BUSINESS REGISTRATION - GET VENDOR BUSINESSES
+// ============================================
+export const getVendorBusinesses = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        const businesses = await Business.find({ vendorId })
+            .populate('businessTypeId', 'name')
+            .populate('subtypes', 'name')
+            .sort({ isDefault: -1, createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: businesses
+        });
+
+    } catch (error: any) {
+        console.error('Get Vendor Businesses Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// BUSINESS REGISTRATION - SWITCH DEFAULT BUSINESS
+// ============================================
+export const switchDefaultBusiness = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        const { businessId } = req.params;
+        
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        const business = await Business.findOne({ _id: businessId, vendorId });
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: 'Business not found'
+            });
+        }
+
+        await Business.updateMany({ vendorId }, { isDefault: false });
+
+        business.isDefault = true;
+        await business.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Default business updated successfully'
+        });
+
+    } catch (error: any) {
+        console.error('Switch Default Business Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// REQUEST TRIAL EXTENSION
 // ============================================
 export const requestTrialExtension = async (req: any, res: Response): Promise<any> => {
     try {
@@ -509,7 +861,7 @@ export const requestTrialExtension = async (req: any, res: Response): Promise<an
 };
 
 // ============================================
-// 10. GET TRIAL STATUS
+// GET TRIAL STATUS
 // ============================================
 export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
     try {
@@ -556,10 +908,7 @@ export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 11. START FREE TRIAL - FIXED
-// ============================================
-// ============================================
-// 11. START FREE TRIAL - FIXED
+// START FREE TRIAL
 // ============================================
 export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
     try {
@@ -582,7 +931,6 @@ export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
             });
         }
 
-        // Check if already on free trial
         if (vendor.subscriptionPlan === 'free' && vendor.subscriptionStatus === 'active') {
             return res.status(400).json({
                 success: false,
@@ -590,7 +938,6 @@ export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
             });
         }
 
-        // Check if pending approval
         if (vendor.subscriptionStatus === 'pending_approval') {
             return res.status(400).json({
                 success: false,
@@ -598,7 +945,6 @@ export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
             });
         }
 
-        // ✅ 30 DAYS TRIAL SET KARO
         const trialStartDate = new Date();
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + 30);
@@ -629,8 +975,9 @@ export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
         });
     }
 };
+
 // ============================================
-// 12. CANCEL SUBSCRIPTION REQUEST - FIXED
+// CANCEL SUBSCRIPTION REQUEST
 // ============================================
 export const cancelSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
     try {
@@ -683,7 +1030,7 @@ export const cancelSubscriptionRequest = async (req: any, res: Response): Promis
 };
 
 // ============================================
-// 13. REQUEST WITHDRAWAL (VENDOR)
+// REQUEST WITHDRAWAL (VENDOR)
 // ============================================
 export const requestWithdrawal = async (req: any, res: Response): Promise<any> => {
     try {
@@ -707,7 +1054,6 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
         }
 
         const amountNum = Number(amount);
-
         if (amountNum < 5000) {
             return res.status(400).json({
                 success: false,
@@ -774,7 +1120,7 @@ export const requestWithdrawal = async (req: any, res: Response): Promise<any> =
 };
 
 // ============================================
-// 14. GET WITHDRAWAL HISTORY (VENDOR)
+// GET WITHDRAWAL HISTORY (VENDOR)
 // ============================================
 export const getWithdrawalHistory = async (req: any, res: Response): Promise<any> => {
     try {
@@ -810,7 +1156,307 @@ export const getWithdrawalHistory = async (req: any, res: Response): Promise<any
     }
 };
 
-// ✅ REMOVED: getWithdrawals (Admin version moved to admin.controller.ts)
-// ✅ REMOVED: updateWithdrawalStatus (Admin version moved to admin.controller.ts)
-// ✅ REMOVED: getSubscriptionRequests (Admin version moved to admin.controller.ts)
-// ✅ REMOVED: updateSubscriptionStatus (Admin version moved to admin.controller.ts)
+// ============================================
+// ✅ GET SUBSCRIPTION STATUS (VENDOR) - BUSINESS ONLY
+// ============================================
+export const getSubscriptionStatus = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // ✅ Only check BUSINESS subscriptions
+        const pendingRequests = await SubscriptionRequest.find({
+            vendorId,
+            businessId: { $exists: true, $ne: null },
+            status: 'pending'
+        });
+
+        const approvedRequests = await SubscriptionRequest.find({
+            vendorId,
+            businessId: { $exists: true, $ne: null },
+            status: 'approved'
+        }).sort({ approvedAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                plan: vendor.subscriptionPlan || 'free',
+                status: vendor.subscriptionStatus || 'active',
+                isApproved: vendor.subscriptionStatus === 'active' && vendor.subscriptionPlan !== 'free',
+                pendingApproval: vendor.subscriptionStatus === 'pending_approval',
+                hasPendingRequest: pendingRequests.length > 0,
+                hasApprovedRequest: approvedRequests.length > 0,
+                pendingRequests: pendingRequests.map((r: any) => ({
+                    businessId: r.businessId,
+                    businessName: r.businessName,
+                    planType: r.planType,
+                    requestedAt: r.requestedAt
+                })),
+                approvedRequests: approvedRequests.map((r: any) => ({
+                    businessId: r.businessId,
+                    businessName: r.businessName,
+                    planType: r.planType,
+                    approvedAt: r.approvedAt
+                })),
+                endDate: vendor.subscriptionExpiryDate || vendor.subscriptionEndDate || null
+            }
+        });
+
+    } catch (error: any) {
+        console.error('❌ Get Subscription Status Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ============================================
+// ✅ REQUEST BUSINESS SUBSCRIPTION - PER BUSINESS (FIXED)
+// ============================================
+export const requestBusinessSubscription = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        const { businessId } = req.params;
+        const {
+            plan,
+            amount,
+            paymentMethod,
+            accountNumber,
+            accountHolderName,
+            phoneNumber,
+            bankName,
+            accountType,
+            notes
+        } = req.body;
+
+        console.log('📋 Business Subscription Request:', {
+            vendorId,
+            businessId,
+            plan,
+            amount,
+            paymentMethod
+        });
+
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        if (!businessId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Business ID is required'
+            });
+        }
+
+        if (!plan || !['monthly', 'yearly'].includes(plan)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid plan. Use: monthly or yearly'
+            });
+        }
+
+        if (!accountNumber || !accountHolderName) {
+            return res.status(400).json({
+                success: false,
+                message: 'Account number and account holder name are required'
+            });
+        }
+
+        const business = await Business.findOne({ _id: businessId, vendorId });
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: 'Business not found'
+            });
+        }
+
+        // ✅ ONLY check for this specific business's pending request
+        const existingBusinessRequest = await SubscriptionRequest.findOne({
+            businessId: business._id,
+            status: 'pending'
+        });
+
+        if (existingBusinessRequest) {
+            return res.status(400).json({
+                success: false,
+                message: `This business "${business.businessName}" already has a pending subscription request. Please wait for admin approval.`
+            });
+        }
+
+        // ✅ BUSINESS CHECK: Agar business already active hai to block karein
+        if (business.subscriptionStatus === 'active') {
+            return res.status(400).json({
+                success: false,
+                message: `Business "${business.businessName}" is already subscribed to a plan.`
+            });
+        }
+
+        // ✅ Business ko pending set karo
+        business.subscriptionPlan = plan;
+        business.subscriptionStatus = 'pending';
+        await business.save();
+
+        // ✅ Subscription request create karo
+        const subscriptionRequest = await SubscriptionRequest.create({
+            vendorId,
+            businessId: business._id,
+            businessName: business.businessName,
+            vendorName: req.user?.name || 'Vendor',
+            vendorEmail: req.user?.email || '',
+            shopName: business.businessName,
+            planType: plan,
+            amount: amount || (plan === 'yearly' ? 10000 : 1000),
+            paymentMethod: paymentMethod || 'easypaisa',
+            accountNumber: accountNumber || 'N/A',
+            accountHolderName: accountHolderName || 'N/A',
+            phoneNumber: phoneNumber || '',
+            bankName: bankName || '',
+            accountType: accountType || '',
+            notes: notes || '',
+            status: 'pending',
+            requestedAt: new Date()
+        });
+
+        console.log(`✅ Business subscription request created: ${business.businessName} - ${plan} plan`);
+
+        return res.status(201).json({
+            success: true,
+            message: `✅ Subscription request sent for ${business.businessName}! Waiting for admin approval.`,
+            data: {
+                businessId: business._id,
+                businessName: business.businessName,
+                plan,
+                status: 'pending',
+                requestId: subscriptionRequest._id,
+                totalPending: await SubscriptionRequest.countDocuments({ businessId: business._id, status: 'pending' })
+            }
+        });
+
+    } catch (error: any) {
+        console.error('❌ Business subscription request error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to process subscription request'
+        });
+    }
+};
+
+// ============================================
+// ✅ GET BUSINESS SUBSCRIPTION STATUS
+// ============================================
+export const getBusinessSubscriptionStatus = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        const { businessId } = req.params;
+
+        if (!vendorId || !businessId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vendor ID and Business ID are required'
+            });
+        }
+
+        const business = await Business.findOne({ _id: businessId, vendorId });
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: 'Business not found'
+            });
+        }
+
+        const pendingRequest = await SubscriptionRequest.findOne({
+            businessId,
+            status: 'pending'
+        });
+
+        const approvedRequest = await SubscriptionRequest.findOne({
+            businessId,
+            status: 'approved'
+        }).sort({ approvedAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                businessId: business._id,
+                businessName: business.businessName,
+                plan: business.subscriptionPlan || 'free',
+                status: business.subscriptionStatus || 'none',
+                isActive: business.subscriptionStatus === 'active',
+                isPending: business.subscriptionStatus === 'pending',
+                hasPendingRequest: !!pendingRequest,
+                hasApprovedRequest: !!approvedRequest,
+                endDate: business.subscriptionEnd || null,
+                approvedPlan: approvedRequest?.planType || null,
+                approvedAt: approvedRequest?.approvedAt || null,
+                totalPending: await SubscriptionRequest.countDocuments({ businessId, status: 'pending' })
+            }
+        });
+
+    } catch (error: any) {
+        console.error('❌ Get business subscription status error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// ============================================
+// ✅ GET BUSINESS SUBSCRIPTION HISTORY
+// ============================================
+export const getBusinessSubscriptionHistory = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        const subscriptions = await SubscriptionRequest.find({ vendorId })
+            .populate('businessId', 'businessName')
+            .sort({ requestedAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: subscriptions.map((s: any) => ({
+                id: s._id,
+                businessId: s.businessId?._id || s.businessId,
+                businessName: s.businessId?.businessName || s.businessName || s.shopName,
+                planType: s.planType,
+                amount: s.amount,
+                status: s.status,
+                requestedAt: s.requestedAt,
+                approvedAt: s.approvedAt,
+                rejectedReason: s.rejectedReason
+            }))
+        });
+
+    } catch (error: any) {
+        console.error('❌ Get business subscription history error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};

@@ -3,6 +3,7 @@
 import express from 'express';
 import { protect } from '../auth/auth.middleware.js';
 import { upload } from './vendor.middleware.js';
+
 import {
     getVendorDashboardData,
     getProducts,
@@ -11,64 +12,94 @@ import {
     getEmployees,
     addEmployee,
     deleteEmployee,
-    upgradeSubscriptionRequest,
     requestTrialExtension,
     getTrialStatus,
     startFreeTrial,
     cancelSubscriptionRequest,
     requestWithdrawal,
-    getWithdrawalHistory
+    getWithdrawalHistory,
+    getBusinessTypes,
+    getSubtypesByType,
+    registerBusiness,
+    getVendorBusinesses,
+    switchDefaultBusiness,
+    getSubscriptionStatus,
+    requestBusinessSubscription,
+    getBusinessSubscriptionStatus,
+    getBusinessSubscriptionHistory
 } from './vendor.controller.js';
 
 const router = express.Router();
 
 // =========================================================
-// ✅ MIDDLEWARE: Extract userId from req.user
-// =========================================================
-const setUserId = (req: any, res: any, next: any) => {
-    if (req.user) {
-        req.userId = req.user._id || req.user.id;
-    }
-    next();
-};
-
-// =========================================================
-// ✅ TEST ROUTE - Check if vendor routes work
+// ✅ TEST ROUTE
 // =========================================================
 router.get('/test', (req, res) => {
-    res.json({
-        success: true,
+    res.json({ 
+        success: true, 
         message: '✅ Vendor routes are working!',
         timestamp: new Date().toISOString()
     });
 });
 
 // =========================================================
-// ✅ PROTECTED ROUTES
+// DASHBOARD
 // =========================================================
+router.get('/dashboard-summary', protect, getVendorDashboardData);
+router.get('/trial-status', protect, getTrialStatus);
 
-// ---------- DASHBOARD ----------
-router.get('/dashboard-summary', protect, setUserId, getVendorDashboardData);
-router.get('/trial-status', protect, setUserId, getTrialStatus);
+// =========================================================
+// ✅ SUBSCRIPTION STATUS
+// =========================================================
+router.get('/subscription/status', protect, getSubscriptionStatus);
 
-// ---------- PRODUCTS ----------
-router.get('/products', protect, setUserId, getProducts);
-router.post('/products/add', protect, setUserId, upload.array('images', 5), addProduct);
-router.delete('/products/:productId', protect, setUserId, deleteProduct);
+// =========================================================
+// ✅ BUSINESS SUBSCRIPTION ROUTES
+// =========================================================
+router.post('/business/:businessId/subscription/request', protect, requestBusinessSubscription);
+router.get('/business/:businessId/subscription/status', protect, getBusinessSubscriptionStatus);
+router.get('/business/subscriptions/history', protect, getBusinessSubscriptionHistory);
 
-// ---------- EMPLOYEES ----------
-router.get('/employees', protect, setUserId, getEmployees);
-router.post('/employees/add', protect, setUserId, addEmployee);
-router.delete('/employees/:employeeId', protect, setUserId, deleteEmployee);
+// =========================================================
+// PRODUCTS
+// =========================================================
+router.get('/products', protect, getProducts);
+router.post('/products/add', protect, upload.array('images', 5), addProduct);
+router.delete('/products/:productId', protect, deleteProduct);
 
-// ---------- WITHDRAWAL ----------
-router.post('/withdrawal/request', protect, setUserId, requestWithdrawal);
-router.get('/withdrawal/history', protect, setUserId, getWithdrawalHistory);
+// =========================================================
+// EMPLOYEES
+// =========================================================
+router.get('/employees', protect, getEmployees);
+router.post('/employees/add', protect, addEmployee);
+router.delete('/employees/:employeeId', protect, deleteEmployee);
 
-// ---------- SUBSCRIPTION ----------
-router.post('/subscription/start-trial', protect, setUserId, startFreeTrial);
-router.post('/subscription/upgrade', protect, setUserId, upgradeSubscriptionRequest);
-router.post('/subscription/cancel-request', protect, setUserId, cancelSubscriptionRequest);
-router.post('/subscription/extend-trial', protect, setUserId, requestTrialExtension);
+// =========================================================
+// WITHDRAWAL
+// =========================================================
+router.post('/withdrawal/request', protect, requestWithdrawal);
+router.get('/withdrawal/history', protect, getWithdrawalHistory);
+
+// =========================================================
+// ❌ GLOBAL SUBSCRIPTION ROUTES - REMOVED
+// =========================================================
+// router.post('/subscription/start-trial', protect, startFreeTrial);
+// router.post('/subscription/upgrade', protect, upgradeSubscriptionRequest);
+// router.post('/subscription/cancel-request', protect, cancelSubscriptionRequest);
+// router.post('/subscription/extend-trial', protect, requestTrialExtension);
+// router.post('/subscription/request', protect, requestSubscription);
+
+// =========================================================
+// BUSINESS REGISTRATION ROUTES
+// =========================================================
+router.get('/business/types', protect, getBusinessTypes);
+router.get('/business/subtypes/:typeId', protect, getSubtypesByType);
+router.post('/business/register', protect, upload.fields([
+    { name: 'businessLogo', maxCount: 1 },
+    { name: 'coverImage', maxCount: 1 },
+    { name: 'galleryImages', maxCount: 10 }
+]), registerBusiness);
+router.get('/business/list', protect, getVendorBusinesses);
+router.put('/business/default/:businessId', protect, switchDefaultBusiness);
 
 export default router;

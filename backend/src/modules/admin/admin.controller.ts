@@ -1,11 +1,16 @@
+// backend/src/modules/admin/admin.controller.ts
+
 import { Request, Response } from 'express';
 import User from '../auth/User.model.js';
 import Employer from './Employer.model.js';
 import Commission from './Commission.model.js';
 import Coupon from './Coupon.model.js';
 import Announcement from './Announcement.model.js';
-// ✅ IMPORT WITHDRAWAL
 import Withdrawal from '../vendor/Withdrawal.model.js';
+import Business from '../vendor/Business.model.js';
+import SubscriptionRequest from '../vendor/SubscriptionRequest.model.js';
+import BusinessType from '../vendor/BusinessType.model.js';
+import BusinessSubtype from '../vendor/BusinessSubtype.model.js';
 
 // ============================================
 // VENDORS
@@ -18,7 +23,7 @@ export const getVendors = async (req: Request, res: Response) => {
 
         const formattedVendors = vendors.map((vendor: any) => ({
             id: vendor._id,
-             vendorId: vendor.vendorId || null,  // ✅ NEW
+            vendorId: vendor.vendorId || null,
             shopName: vendor.shopName || vendor.name + "'s Shop",
             ownerName: vendor.name,
             email: vendor.email,
@@ -29,7 +34,26 @@ export const getVendors = async (req: Request, res: Response) => {
             cnicBack: vendor.cnicBack,
             businessLicense: vendor.businessLicense,
             shopAddress: vendor.shopAddress || 'Not provided',
-            ntnNumber: vendor.ntnNumber || null
+            ntnNumber: vendor.ntnNumber || null,
+            whatsapp: vendor.whatsapp || '',
+            city: vendor.city || '',
+            country: vendor.country || '',
+            streetAddress: vendor.streetAddress || '',
+            businessPhone: vendor.businessPhone || '',
+            businessWhatsapp: vendor.businessWhatsapp || '',
+            businessLandline: vendor.businessLandline || '',
+            businessEmail: vendor.businessEmail || '',
+            businessCity: vendor.businessCity || '',
+            businessCountry: vendor.businessCountry || '',
+            businessNtn: vendor.businessNtn || '',
+            businessWebsite: vendor.businessWebsite || '',
+            socialLink: vendor.socialLink || '',
+            mapLocation: vendor.mapLocation || '',
+            businessTimings: vendor.businessTimings || '',
+            businessType: vendor.businessType || '',
+            businessLogo: vendor.businessLogo || '',
+            coverImage: vendor.coverImage || '',
+            galleryImages: vendor.galleryImages || []
         }));
 
         res.json({ success: true, vendors: formattedVendors });
@@ -317,7 +341,7 @@ export const deleteAnnouncement = async (req: Request, res: Response) => {
 };
 
 // ============================================
-// ✅ WITHDRAWALS
+// WITHDRAWALS
 // ============================================
 export const getWithdrawals = async (req: Request, res: Response) => {
     try {
@@ -385,7 +409,7 @@ export const updateWithdrawalStatus = async (req: Request, res: Response) => {
 };
 
 // ============================================
-// ✅ DELETE VENDOR
+// DELETE VENDOR
 // ============================================
 export const deleteVendor = async (req: Request, res: Response) => {
     try {
@@ -414,12 +438,18 @@ export const deleteVendor = async (req: Request, res: Response) => {
 };
 
 // ============================================
-// ✅ UPDATE VENDOR
+// UPDATE VENDOR
 // ============================================
 export const updateVendor = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { shopName, ownerName, email, phone, shopAddress, ntnNumber } = req.body;
+        const { 
+            shopName, ownerName, email, phone, shopAddress, ntnNumber,
+            whatsapp, city, country, streetAddress,
+            businessPhone, businessWhatsapp, businessLandline, businessEmail,
+            businessCity, businessCountry, businessNtn, businessWebsite,
+            socialLink, mapLocation, businessTimings, businessType
+        } = req.body;
         
         const vendor = await User.findOne({ _id: id, role: 'vendor' });
         if (!vendor) {
@@ -429,13 +459,28 @@ export const updateVendor = async (req: Request, res: Response) => {
             });
         }
         
-        // Update fields
         if (shopName) vendor.shopName = shopName;
         if (ownerName) vendor.name = ownerName;
         if (email) vendor.email = email;
         if (phone) vendor.phone = phone;
         if (shopAddress) vendor.shopAddress = shopAddress;
         if (ntnNumber) vendor.ntnNumber = ntnNumber;
+        if (whatsapp) vendor.whatsapp = whatsapp;
+        if (city) vendor.city = city;
+        if (country) vendor.country = country;
+        if (streetAddress) vendor.streetAddress = streetAddress;
+        if (businessPhone) vendor.businessPhone = businessPhone;
+        if (businessWhatsapp) vendor.businessWhatsapp = businessWhatsapp;
+        if (businessLandline) vendor.businessLandline = businessLandline;
+        if (businessEmail) vendor.businessEmail = businessEmail;
+        if (businessCity) vendor.businessCity = businessCity;
+        if (businessCountry) vendor.businessCountry = businessCountry;
+        if (businessNtn) vendor.businessNtn = businessNtn;
+        if (businessWebsite) vendor.businessWebsite = businessWebsite;
+        if (socialLink) vendor.socialLink = socialLink;
+        if (mapLocation) vendor.mapLocation = mapLocation;
+        if (businessTimings) vendor.businessTimings = businessTimings;
+        if (businessType) vendor.businessType = businessType;
         
         await vendor.save();
         
@@ -451,7 +496,8 @@ export const updateVendor = async (req: Request, res: Response) => {
                 shopAddress: vendor.shopAddress,
                 ntnNumber: vendor.ntnNumber,
                 status: vendor.approvalStatus,
-                date: vendor.createdAt ? new Date(vendor.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                date: vendor.createdAt ? new Date(vendor.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                businessType: vendor.businessType || ''
             }
         });
     } catch (error: any) {
@@ -463,99 +509,265 @@ export const updateVendor = async (req: Request, res: Response) => {
 };
 
 // ============================================
-// ✅ SUBSCRIPTIONS
+// ✅ BUSINESS SUBSCRIPTION REQUESTS - FIXED (Free Trial included)
 // ============================================
-export const getSubscriptionRequests = async (req: Request, res: Response) => {
+// backend/src/modules/admin/admin.controller.ts
+
+export const getBusinessSubscriptionRequests = async (req: Request, res: Response) => {
     try {
-        console.log('📋 [ADMIN] Fetching subscription requests...');
+        console.log('📋 [ADMIN] Fetching business subscription requests...');
 
-        const vendors = await User.find({
-            subscriptionStatus: 'pending_approval',
-            role: 'vendor'
-        }).select('name shopName email subscriptionPlan hasRequestedExtension extensionRequestDate');
+        // ✅ ONLY fetch PAID requests (monthly/yearly) - Free Trial not included
+        const requests = await SubscriptionRequest.find({ 
+            businessId: { $exists: true, $ne: null },
+            planType: { $in: ['monthly', 'yearly'] } // ✅ Only paid plans
+        })
+            .populate('businessId', 'businessName businessEmail phone addressCity addressCountry status subscriptionStatus subscriptionPlan')
+            .populate('vendorId', 'name email phone')
+            .sort({ createdAt: -1 });
 
-        const formatted = vendors.map((v: any) => ({
-            id: v._id,
-            vendorId: v._id,
-            vendorName: v.name,
-            shopName: v.shopName || v.name + "'s Shop",
-            planType: v.subscriptionPlan === 'monthly' || v.subscriptionPlan === 'yearly'
-                ? v.subscriptionPlan
-                : v.hasRequestedExtension ? 'trial_extension' : 'unknown',
-            amount: v.subscriptionPlan === 'monthly' ? 1000 : v.subscriptionPlan === 'yearly' ? 10000 : 0,
-            status: 'pending',
-            requestedAt: v.extensionRequestDate
-                ? new Date(v.extensionRequestDate).toISOString().split('T')[0]
-                : new Date().toISOString().split('T')[0]
+        console.log(`✅ Found ${requests.length} paid subscription requests`);
+
+        const formatted = requests.map((req: any) => ({
+            id: req._id,
+            businessId: req.businessId?._id || req.businessId || null,
+            businessName: req.businessId?.businessName || req.businessName || 'Unknown Business',
+            businessEmail: req.businessId?.businessEmail || 'N/A',
+            businessStatus: req.businessId?.status || 'pending',
+            vendorId: req.vendorId?._id || req.vendorId || null,
+            vendorName: req.vendorId?.name || req.vendorName || 'Unknown Vendor',
+            vendorEmail: req.vendorId?.email || req.vendorEmail || 'N/A',
+            vendorPhone: req.vendorId?.phone || req.phoneNumber || 'N/A',
+            plan: req.planType || 'monthly',
+            amount: req.amount || 0,
+            paymentMethod: req.paymentMethod || 'easypaisa',
+            accountNumber: req.accountNumber || 'N/A',
+            accountHolderName: req.accountHolderName || 'N/A',
+            phoneNumber: req.phoneNumber || 'N/A',
+            bankName: req.bankName || 'N/A',
+            notes: req.notes || '',
+            status: req.status || 'pending',
+            createdAt: req.createdAt ? new Date(req.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            requestedAt: req.requestedAt ? new Date(req.requestedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
         }));
 
-        res.json({ success: true, requests: formatted });
+        res.json({ 
+            success: true, 
+            requests: formatted,
+            count: formatted.length
+        });
     } catch (error: any) {
-        console.error('❌ [ADMIN] Error fetching subscriptions:', error);
+        console.error('❌ [ADMIN] Error fetching business subscriptions:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message 
+        });
+    }
+};
+// ✅ FIXED: Approve Business Subscription (Including Free Trial)
+export const approveBusinessSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
+    try {
+        const { requestId } = req.params;
+        const adminId = req.userId || req.user?._id;
+
+        console.log(`📋 [ADMIN] Approving business subscription request: ${requestId}`);
+
+        const request = await SubscriptionRequest.findById(requestId);
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: 'Subscription request not found'
+            });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: `Request is already ${request.status}`
+            });
+        }
+
+        // Update request status
+        request.status = 'approved';
+        request.approvedBy = adminId;
+        request.approvedAt = new Date();
+        await request.save();
+
+        const plan = request.planType || request.plan || 'free';
+
+        // ✅ Update Business
+        if (request.businessId) {
+            const business = await Business.findById(request.businessId);
+            if (business) {
+                business.status = 'approved';
+                business.subscriptionPlan = plan;
+                business.subscriptionStatus = 'approved';
+                
+                // ✅ ✅ ✅ FIX: Free Trial ke liye 30 days, Monthly = 30 days, Yearly = 365 days
+                const endDate = new Date();
+                if (plan === 'yearly') {
+                    endDate.setFullYear(endDate.getFullYear() + 1);
+                } else if (plan === 'monthly') {
+                    endDate.setMonth(endDate.getMonth() + 1);
+                } else {
+                    // Free Trial - 30 days
+                    endDate.setDate(endDate.getDate() + 30);
+                }
+                business.subscriptionEnd = endDate;
+                business.subscriptionStart = new Date();
+                await business.save();
+                console.log(`✅ Business UPDATED: ${business.businessName} -> plan: ${plan}, ends: ${endDate}`);
+            }
+        }
+
+        // ✅ Update Vendor
+        if (request.vendorId) {
+            const vendor = await User.findById(request.vendorId);
+            if (vendor) {
+                vendor.subscriptionStatus = 'active';
+                vendor.subscriptionPlan = plan;
+                const endDate = new Date();
+                if (plan === 'yearly') {
+                    endDate.setFullYear(endDate.getFullYear() + 1);
+                } else if (plan === 'monthly') {
+                    endDate.setMonth(endDate.getMonth() + 1);
+                } else {
+                    // Free Trial - 30 days
+                    endDate.setDate(endDate.getDate() + 30);
+                }
+                vendor.subscriptionExpiryDate = endDate;
+                vendor.hasRequestedExtension = false;
+                await vendor.save();
+                console.log(`✅ Vendor UPDATED: ${vendor.name} -> ${plan} plan`);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `✅ Business subscription approved! Plan: ${plan.toUpperCase()}`
+        });
+
+    } catch (error: any) {
+        console.error('❌ Approve business subscription error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to approve business subscription'
+        });
+    }
+};
+
+// ✅ FIXED: Reject Business Subscription (Including Free Trial)
+export const rejectBusinessSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
+    try {
+        const { requestId } = req.params;
+        const { reason } = req.body;
+        const adminId = req.userId || req.user?._id;
+
+        console.log(`📋 [ADMIN] Rejecting business subscription request: ${requestId}`);
+
+        if (!requestId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Request ID is required'
+            });
+        }
+
+        const request = await SubscriptionRequest.findById(requestId);
+        if (!request) {
+            console.log(`❌ Business subscription request not found: ${requestId}`);
+            return res.status(404).json({
+                success: false,
+                message: 'Subscription request not found'
+            });
+        }
+
+        if (request.status !== 'pending') {
+            return res.status(400).json({
+                success: false,
+                message: `Request is already ${request.status}`
+            });
+        }
+
+        // Update request status to rejected
+        request.status = 'rejected';
+        request.rejectedReason = reason || 'No reason provided';
+        request.approvedBy = adminId;
+        request.approvedAt = new Date();
+        await request.save();
+        console.log(`✅ Business subscription request rejected: ${requestId}`);
+
+        // ✅ Update Business status to rejected
+        if (request.businessId) {
+            try {
+                const business = await Business.findById(request.businessId);
+                if (business) {
+                    business.status = 'rejected';
+                    business.subscriptionPlan = 'free';
+                    business.subscriptionStatus = 'rejected';
+                    business.subscriptionEnd = null;
+                    business.subscriptionStart = null;
+                    await business.save();
+                    console.log(`✅ Business UPDATED: ${business.businessName} -> status: rejected`);
+                }
+            } catch (businessError: any) {
+                console.error('❌ Error updating business:', businessError);
+            }
+        }
+
+        // ✅ Update Vendor
+        if (request.vendorId) {
+            try {
+                const vendor = await User.findById(request.vendorId);
+                if (vendor) {
+                    vendor.subscriptionStatus = 'none';
+                    vendor.subscriptionPlan = 'free';
+                    vendor.hasRequestedExtension = false;
+                    await vendor.save();
+                    console.log(`✅ Vendor UPDATED: ${vendor.name} -> free plan`);
+                }
+            } catch (vendorError: any) {
+                console.error('❌ Error updating vendor:', vendorError);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `❌ Business subscription rejected successfully.`
+        });
+
+    } catch (error: any) {
+        console.error('❌ Reject business subscription error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to reject business subscription'
+        });
+    }
+};
+
+// ============================================
+// ✅ BUSINESS TYPES & SUBTYPES
+// ============================================
+export const getBusinessTypes = async (req: Request, res: Response) => {
+    try {
+        console.log('📋 [ADMIN] Fetching business types...');
+        const types = await BusinessType.find().sort({ name: 1 });
+        console.log(`✅ Found ${types.length} business types`);
+        res.json({ success: true, data: types });
+    } catch (error: any) {
+        console.error('❌ [ADMIN] Error fetching business types:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-export const updateSubscriptionStatus = async (req: Request, res: Response) => {
+export const getSubtypesByType = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const { status } = req.body;
-
-        if (!['approved', 'rejected'].includes(status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid status. Must be "approved" or "rejected"'
-            });
-        }
-
-        const vendor = await User.findById(id);
-        if (!vendor || vendor.role !== 'vendor') {
-            return res.status(404).json({
-                success: false,
-                message: 'Vendor not found'
-            });
-        }
-
-        if (status === 'approved') {
-            if (vendor.hasRequestedExtension) {
-                const newTrialEndDate = new Date();
-                newTrialEndDate.setDate(newTrialEndDate.getDate() + 15);
-                vendor.trialEndDate = newTrialEndDate;
-                vendor.hasRequestedExtension = false;
-                vendor.subscriptionStatus = 'active';
-                await vendor.save();
-
-                return res.json({
-                    success: true,
-                    message: '✅ Trial extension approved! 15 days added.'
-                });
-            }
-
-            const daysToAdd = vendor.subscriptionPlan === 'monthly' ? 30 : 365;
-            const newExpiryDate = new Date();
-            newExpiryDate.setDate(newExpiryDate.getDate() + daysToAdd);
-
-            vendor.subscriptionStatus = 'active';
-            vendor.subscriptionExpiryDate = newExpiryDate;
-            vendor.hasRequestedExtension = false;
-            await vendor.save();
-
-            return res.json({
-                success: true,
-                message: `✅ Subscription approved! ${vendor.subscriptionPlan} plan activated.`
-            });
-        } else {
-            vendor.subscriptionStatus = 'active';
-            vendor.hasRequestedExtension = false;
-            vendor.subscriptionPlan = 'free';
-            await vendor.save();
-
-            return res.json({
-                success: true,
-                message: '❌ Subscription request rejected.'
-            });
-        }
+        const { typeId } = req.params;
+        console.log(`📋 [ADMIN] Fetching subtypes for type: ${typeId}`);
+        const subtypes = await BusinessSubtype.find({ businessTypeId: typeId }).sort({ name: 1 });
+        console.log(`✅ Found ${subtypes.length} subtypes`);
+        res.json({ success: true, data: subtypes });
     } catch (error: any) {
+        console.error('❌ [ADMIN] Error fetching subtypes:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 };

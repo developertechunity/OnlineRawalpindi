@@ -1,7 +1,5 @@
 // backend/src/modules/payment/payment.controller.ts
 
-// backend/src/modules/payment/payment.controller.ts
-
 import { Request, Response } from 'express';
 import PaymentService from './payment.service.js';
 import Payment from './payment.model.js';
@@ -9,21 +7,13 @@ import User from '../auth/User.model.js';
 import Order from '../order/Order.model.js';
 
 // ============================================
-// 1. CREATE PAYMENT (COD, EasyPaisa, JazzCash)
+// 1. CREATE PAYMENT
 // ============================================
 export const createPayment = async (req: any, res: Response): Promise<any> => {
     try {
-        const {
-            orderId,
-            amount,
-            method,
-            customerPhone,
-            riderId
-        } = req.body;
-
+        const { orderId, amount, method, customerPhone, riderId } = req.body;
         const customerId = req.userId;
 
-        // ✅ Only allow Pakistan methods
         if (!['easypaisa', 'jazzcash', 'cod'].includes(method)) {
             return res.status(400).json({
                 success: false,
@@ -83,9 +73,8 @@ export const createPayment = async (req: any, res: Response): Promise<any> => {
     }
 };
 
-// ... rest of the controller functions remain same
 // ============================================
-// 2. CONFIRM COD PAYMENT - FOR RIDER
+// 2. CONFIRM COD
 // ============================================
 export const confirmCOD = async (req: any, res: Response): Promise<any> => {
     try {
@@ -121,13 +110,13 @@ export const confirmCOD = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 3. DEPOSIT COD TO ADMIN - FOR RIDER
+// 3. DEPOSIT COD TO ADMIN
 // ============================================
 export const depositCODToAdmin = async (req: any, res: Response): Promise<any> => {
     try {
         const { orderId } = req.body;
         const riderId = req.userId;
-        const adminId = req.userId; // Assuming admin is logged in
+        const adminId = req.userId;
 
         const user = await User.findById(riderId);
         if (!user || (user.role !== 'rider' && user.role !== 'admin')) {
@@ -158,7 +147,7 @@ export const depositCODToAdmin = async (req: any, res: Response): Promise<any> =
 };
 
 // ============================================
-// 4. PROCESS REFUND - FOR ADMIN/VENDOR
+// 4. PROCESS REFUND
 // ============================================
 export const processRefund = async (req: any, res: Response): Promise<any> => {
     try {
@@ -195,7 +184,7 @@ export const processRefund = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 5. GET PAYMENTS - FOR ALL ROLES
+// 5. GET PAYMENTS
 // ============================================
 export const getPayments = async (req: any, res: Response): Promise<any> => {
     try {
@@ -235,7 +224,7 @@ export const getPayments = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
-// 6. GET PAYMENT DETAILS - FOR ALL ROLES
+// 6. GET PAYMENT DETAILS
 // ============================================
 export const getPaymentDetails = async (req: any, res: Response): Promise<any> => {
     try {
@@ -262,7 +251,6 @@ export const getPaymentDetails = async (req: any, res: Response): Promise<any> =
             });
         }
 
-        // Check authorization based on role
         const authorized = (
             user.role === 'admin' ||
             payment.customerId._id.toString() === userId ||
@@ -292,7 +280,7 @@ export const getPaymentDetails = async (req: any, res: Response): Promise<any> =
 };
 
 // ============================================
-// 7. GET PAYMENT STATISTICS - FOR ADMIN
+// 7. GET PAYMENT STATISTICS
 // ============================================
 export const getPaymentStatistics = async (req: any, res: Response): Promise<any> => {
     try {
@@ -306,42 +294,11 @@ export const getPaymentStatistics = async (req: any, res: Response): Promise<any
             });
         }
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const [totalPayments, todayPayments, pendingPayments, failedPayments] = await Promise.all([
-            Payment.countDocuments(),
-            Payment.countDocuments({ createdAt: { $gte: today } }),
-            Payment.countDocuments({ status: 'pending' }),
-            Payment.countDocuments({ status: 'failed' })
-        ]);
-
-        const totalRevenue = await Payment.aggregate([
-            { $match: { status: 'success' } },
-            { $group: { _id: null, total: { $sum: '$amount' } } }
-        ]);
-
-        const totalCommission = await Payment.aggregate([
-            { $match: { status: 'success' } },
-            { $group: { _id: null, total: { $sum: '$commissionAmount' } } }
-        ]);
-
-        const paymentsByMethod = await Payment.aggregate([
-            { $match: { status: 'success' } },
-            { $group: { _id: '$method', count: { $sum: 1 }, total: { $sum: '$amount' } } }
-        ]);
+        const result = await PaymentService.getAdminStatistics();
 
         return res.status(200).json({
             success: true,
-            data: {
-                totalPayments,
-                todayPayments,
-                pendingPayments,
-                failedPayments,
-                totalRevenue: totalRevenue[0]?.total || 0,
-                totalCommission: totalCommission[0]?.total || 0,
-                paymentsByMethod
-            }
+            data: result
         });
 
     } catch (error: any) {
@@ -354,23 +311,56 @@ export const getPaymentStatistics = async (req: any, res: Response): Promise<any
 };
 
 // ============================================
-// 8. WEBHOOKS
+// 8. VENDOR SUBSCRIPTION
 // ============================================
-export const handleStripeWebhook = async (req: Request, res: Response): Promise<any> => {
+export const vendorSubscription = async (req: any, res: Response): Promise<any> => {
     try {
-        const signature = req.headers['stripe-signature'] as string;
-        const result = await PaymentService.handleStripeWebhook(req.body, signature);
-        return res.status(200).json(result);
+        const vendorId = req.userId;
+        const { plan } = req.body;
+
+        if (!plan || !['monthly', 'yearly'].includes(plan)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid plan. Use: monthly or yearly'
+            });
+        }
+
+        const user = await User.findById(vendorId);
+        if (!user || user.role !== 'vendor') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only vendors can subscribe'
+            });
+        }
+
+        const amount = plan === 'yearly' ? 10000 : 1000;
+        const result = await PaymentService.processVendorSubscription(vendorId, plan, amount);
+
+        if (!result.success) {
+            return res.status(400).json(result);
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+
     } catch (error: any) {
-        console.error('Stripe Webhook Error:', error);
-        return res.status(500).json({ success: false, message: error.message });
+        console.error('Vendor Subscription Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
+// ============================================
+// 9. WEBHOOKS
+// ============================================
 export const handleEasyPaisaWebhook = async (req: Request, res: Response): Promise<any> => {
     try {
-        const result = await PaymentService.handleEasyPaisaWebhook(req.body);
-        return res.status(200).json(result);
+        console.log('📱 EasyPaisa Webhook received:', req.body);
+        return res.status(200).json({ success: true, message: 'Webhook received' });
     } catch (error: any) {
         console.error('EasyPaisa Webhook Error:', error);
         return res.status(500).json({ success: false, message: error.message });
@@ -379,8 +369,8 @@ export const handleEasyPaisaWebhook = async (req: Request, res: Response): Promi
 
 export const handleJazzCashWebhook = async (req: Request, res: Response): Promise<any> => {
     try {
-        const result = await PaymentService.handleJazzCashWebhook(req.body);
-        return res.status(200).json(result);
+        console.log('📱 JazzCash Webhook received:', req.body);
+        return res.status(200).json({ success: true, message: 'Webhook received' });
     } catch (error: any) {
         console.error('JazzCash Webhook Error:', error);
         return res.status(500).json({ success: false, message: error.message });

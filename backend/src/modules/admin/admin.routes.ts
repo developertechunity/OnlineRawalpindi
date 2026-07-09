@@ -1,3 +1,5 @@
+// backend/src/modules/admin/admin.routes.ts
+
 import { Router } from 'express';
 import { 
     getVendors, 
@@ -16,16 +18,17 @@ import {
     getAnnouncements,
     createAnnouncement,
     deleteAnnouncement,
-    // ✅ WITHDRAWAL & SUBSCRIPTION
     getWithdrawals,
     updateWithdrawalStatus,
-    getSubscriptionRequests,
-    updateSubscriptionStatus,
-    // ✅ DELETE & UPDATE VENDOR (ADD THESE)
     deleteVendor,
-    updateVendor
+    updateVendor,
+    getBusinessSubscriptionRequests,
+    approveBusinessSubscriptionRequest,
+    rejectBusinessSubscriptionRequest,
+    getBusinessTypes,
+    getSubtypesByType
 } from './admin.controller.js';
-import { protect, restrictTo } from '../auth/auth.middleware.js';
+import { protect, restrictTo } from './admin.middleware.js';
 
 const router = Router();
 
@@ -72,15 +75,22 @@ router.post('/announcement', protect, restrictTo('admin'), createAnnouncement);
 router.delete('/announcement/:id', protect, restrictTo('admin'), deleteAnnouncement);
 
 // ============================================
-// ✅ WITHDRAWALS
+// WITHDRAWALS
 // ============================================
 router.get('/withdrawals', protect, restrictTo('admin'), getWithdrawals);
 router.put('/withdrawal/:id/status', protect, restrictTo('admin'), updateWithdrawalStatus);
 
 // ============================================
-// ✅ SUBSCRIPTIONS
+// ✅ BUSINESS SUBSCRIPTIONS (ONLY)
 // ============================================
-router.get('/subscriptions', protect, restrictTo('admin'), getSubscriptionRequests);
-router.put('/subscription/:id/status', protect, restrictTo('admin'), updateSubscriptionStatus);
+router.get('/business-subscriptions', protect, restrictTo('admin'), getBusinessSubscriptionRequests);
+router.put('/business-subscription/:requestId/approve', protect, restrictTo('admin'), approveBusinessSubscriptionRequest);
+router.put('/business-subscription/:requestId/reject', protect, restrictTo('admin'), rejectBusinessSubscriptionRequest);
+
+// ============================================
+// ✅ BUSINESS TYPES & SUBTYPES
+// ============================================
+router.get('/business/types', protect, restrictTo('admin'), getBusinessTypes);
+router.get('/business/subtypes/:typeId', protect, restrictTo('admin'), getSubtypesByType);
 
 export default router;

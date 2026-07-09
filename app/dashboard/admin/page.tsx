@@ -1,3 +1,5 @@
+// app/dashboard/admin/page.tsx
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef, ChangeEvent, FormEvent } from 'react';
@@ -40,6 +42,8 @@ interface Vendor {
     galleryImages?: string[];
     businessTimings?: string;
     streetAddress?: string;
+    businessType?: string;
+    businessSubtypes?: string[];
 }
 
 interface WithdrawalRequest {
@@ -63,6 +67,19 @@ interface SubscriptionRequest {
     amount: number;
     status: 'pending' | 'approved' | 'rejected';
     requestedAt: string;
+    businessId?: string;
+    businessName?: string;
+    businessEmail?: string;
+    plan?: string;
+    paymentMethod?: string;
+    accountNumber?: string;
+    accountHolderName?: string;
+    phoneNumber?: string;
+    bankName?: string;
+    notes?: string;
+    createdAt?: string;
+    vendorEmail?: string;
+    vendorPhone?: string;
 }
 
 interface AdminEmployee {
@@ -97,6 +114,20 @@ interface CommissionType {
     description: string;
 }
 
+interface BusinessType {
+    _id: string;
+    name: string;
+    slug: string;
+    icon?: string;
+}
+
+interface BusinessSubtype {
+    _id: string;
+    name: string;
+    slug: string;
+    businessTypeId: string;
+}
+
 export default function AdminDashboardPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -106,29 +137,34 @@ export default function AdminDashboardPage() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
     const [vendorDetailTab, setVendorDetailTab] = useState<'personal' | 'business'>('personal');
+    const [editTab, setEditTab] = useState<'personal' | 'business'>('personal');
     
-    // ============================================
-    // CURRENT TIME STATE
-    // ============================================
+    const [dashboardFilter, setDashboardFilter] = useState<{
+        type: 'vendors' | 'customers' | 'riders' | 'employees' | null;
+        status: 'all' | 'active' | 'pending' | 'blocklist' | null;
+    }>({ type: null, status: null });
+    const [showFilteredData, setShowFilteredData] = useState(false);
+
     const [currentTime, setCurrentTime] = useState<string>('');
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // ============================================
-    // PAGINATION STATE - UPDATED
-    // ============================================
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [pageSizeOptions] = useState([10, 20, 50, 70, 100, 200, 500, 1000]);
 
-    // ============================================
-    // ADD VENDOR MODAL STATE
-    // ============================================
     const [showAddVendorModal, setShowAddVendorModal] = useState(false);
     const [addVendorLoading, setAddVendorLoading] = useState(false);
     const [addVendorMessage, setAddVendorMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-    
-    // Add Vendor Form State
+    const [addTab, setAddTab] = useState<'personal' | 'business'>('personal');
+
+    const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
+    const [businessSubtypes, setBusinessSubtypes] = useState<BusinessSubtype[]>([]);
+    const [selectedTypeId, setSelectedTypeId] = useState<string>('');
+    const [selectedSubtypeIds, setSelectedSubtypeIds] = useState<string[]>([]);
+    const [showOtherSubtype, setShowOtherSubtype] = useState(false);
+    const [otherSubtypeName, setOtherSubtypeName] = useState('');
+
     const [addVendorForm, setAddVendorForm] = useState({
         name: '',
         email: '',
@@ -137,49 +173,88 @@ export default function AdminDashboardPage() {
         shopName: '',
         shopAddress: '',
         ntnNumber: '',
+        whatsapp: '',
+        city: '',
+        country: '',
+        streetAddress: '',
+        businessPhone: '',
+        businessWhatsapp: '',
+        businessLandline: '',
+        businessEmail: '',
+        businessCity: '',
+        businessCountry: '',
+        businessNtn: '',
+        businessWebsite: '',
+        socialLink: '',
+        mapLocation: '',
+        businessTimings: '',
+        businessType: '',
+        businessSubtypes: [] as string[],
     });
-    
-    // Add Vendor File States
+
     const [addCnicFront, setAddCnicFront] = useState<File | null>(null);
     const [addCnicBack, setAddCnicBack] = useState<File | null>(null);
     const [addBusinessLicense, setAddBusinessLicense] = useState<File | null>(null);
-    
-    // Add Vendor Preview States
+    const [addBusinessLogo, setAddBusinessLogo] = useState<File | null>(null);
+    const [addCoverImage, setAddCoverImage] = useState<File | null>(null);
+    const [addGalleryImages, setAddGalleryImages] = useState<File[]>([]);
+
     const [addCnicFrontPreview, setAddCnicFrontPreview] = useState<string>('');
     const [addCnicBackPreview, setAddCnicBackPreview] = useState<string>('');
     const [addBusinessLicensePreview, setAddBusinessLicensePreview] = useState<string>('');
+    const [addBusinessLogoPreview, setAddBusinessLogoPreview] = useState<string>('');
+    const [addCoverImagePreview, setAddCoverImagePreview] = useState<string>('');
+    const [addGalleryPreviews, setAddGalleryPreviews] = useState<string[]>([]);
 
-    // ============================================
-    // EDIT FORM STATE - WITH FILES
-    // ============================================
     const [editForm, setEditForm] = useState({
         shopName: '',
         ownerName: '',
         email: '',
         phone: '',
         shopAddress: '',
-        ntnNumber: ''
+        ntnNumber: '',
+        whatsapp: '',
+        city: '',
+        country: '',
+        streetAddress: '',
+        businessPhone: '',
+        businessWhatsapp: '',
+        businessLandline: '',
+        businessEmail: '',
+        businessCity: '',
+        businessCountry: '',
+        businessNtn: '',
+        businessWebsite: '',
+        socialLink: '',
+        mapLocation: '',
+        businessTimings: '',
+        businessType: '',
     });
     
     const [editCnicFront, setEditCnicFront] = useState<File | null>(null);
     const [editCnicBack, setEditCnicBack] = useState<File | null>(null);
     const [editBusinessLicense, setEditBusinessLicense] = useState<File | null>(null);
+    const [editBusinessLogo, setEditBusinessLogo] = useState<File | null>(null);
+    const [editCoverImage, setEditCoverImage] = useState<File | null>(null);
+    const [editGalleryImages, setEditGalleryImages] = useState<File[]>([]);
+    
     const [editCnicFrontPreview, setEditCnicFrontPreview] = useState<string>('');
     const [editCnicBackPreview, setEditCnicBackPreview] = useState<string>('');
     const [editBusinessLicensePreview, setEditBusinessLicensePreview] = useState<string>('');
+    const [editBusinessLogoPreview, setEditBusinessLogoPreview] = useState<string>('');
+    const [editCoverImagePreview, setEditCoverImagePreview] = useState<string>('');
+    const [editGalleryPreviews, setEditGalleryPreviews] = useState<string[]>([]);
+    
     const [existingCnicFront, setExistingCnicFront] = useState<string>('');
     const [existingCnicBack, setExistingCnicBack] = useState<string>('');
     const [existingBusinessLicense, setExistingBusinessLicense] = useState<string>('');
+    const [existingBusinessLogo, setExistingBusinessLogo] = useState<string>('');
+    const [existingCoverImage, setExistingCoverImage] = useState<string>('');
+    const [existingGalleryImages, setExistingGalleryImages] = useState<string[]>([]);
 
-    // ============================================
-    // SEARCH/FILTER STATES
-    // ============================================
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
 
-    // ============================================
-    // STATES
-    // ============================================
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [riders, setRiders] = useState<any[]>([]);
     const [customers, setCustomers] = useState<any[]>([]);
@@ -190,17 +265,11 @@ export default function AdminDashboardPage() {
     const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
     const [subscriptionRequests, setSubscriptionRequests] = useState<SubscriptionRequest[]>([]);
 
-    // ============================================
-    // MODALS
-    // ============================================
     const [showAddCoupon, setShowAddCoupon] = useState(false);
     const [showAddAnnouncement, setShowAddAnnouncement] = useState(false);
     const [showAddEmployee, setShowAddEmployee] = useState(false);
     const [showAddCommission, setShowAddCommission] = useState(false);
 
-    // ============================================
-    // FORMS
-    // ============================================
     const [employeeForm, setEmployeeForm] = useState({ name: '', email: '', role: 'Vendor Manager' });
     const [couponForm, setCouponForm] = useState({ code: '', type: 'percentage' as const, discount: '', expiry: '' });
     const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', audience: 'all' as const });
@@ -208,9 +277,6 @@ export default function AdminDashboardPage() {
 
     const API_URL = 'http://localhost:5002';
 
-    // ============================================
-    // CLICK OUTSIDE DROPDOWN
-    // ============================================
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -221,9 +287,6 @@ export default function AdminDashboardPage() {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // ============================================
-    // CURRENT TIME UPDATER
-    // ============================================
     useEffect(() => {
         const updateTime = () => {
             const now = new Date();
@@ -237,9 +300,6 @@ export default function AdminDashboardPage() {
         return () => clearInterval(interval);
     }, []);
 
-    // ============================================
-    // LOGOUT HANDLER
-    // ============================================
     const handleLogout = useCallback(() => {
         if (confirm('Are you sure you want to logout?')) {
             localStorage.clear();
@@ -247,9 +307,6 @@ export default function AdminDashboardPage() {
         }
     }, [router]);
 
-    // ============================================
-    // IMAGE URL HELPER
-    // ============================================
     const getImageUrl = (imagePath?: string) => {
         if (!imagePath) return "";
         if (imagePath.startsWith("http")) return imagePath;
@@ -260,9 +317,45 @@ export default function AdminDashboardPage() {
         return `${API_URL}/uploads/${cleanPath}`;
     };
 
-    // ============================================
-    // ADD VENDOR HANDLERS
-    // ============================================
+    const fetchBusinessTypes = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await axios.get(`${API_URL}/api/auth/business/types`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                setBusinessTypes(response.data.data || []);
+            }
+        } catch (error: any) {
+            console.error('❌ Error fetching business types:', error.message);
+        }
+    }, [API_URL]);
+
+    const fetchSubtypesByType = useCallback(async (typeId: string) => {
+        if (!typeId) {
+            setBusinessSubtypes([]);
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            const response = await axios.get(`${API_URL}/api/auth/business/subtypes/${typeId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (response.data.success) {
+                setBusinessSubtypes(response.data.data || []);
+            }
+        } catch (error: any) {
+            console.error('❌ Error fetching subtypes:', error.message);
+        }
+    }, [API_URL]);
+
     const handleAddVendorFileChange = (e: ChangeEvent<HTMLInputElement>, setFile: (file: File | null) => void, setPreview: (preview: string) => void) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -290,15 +383,39 @@ export default function AdminDashboardPage() {
             formData.append('phone', addVendorForm.phone);
             formData.append('password', addVendorForm.password);
             formData.append('role', 'vendor');
+            formData.append('whatsapp', addVendorForm.whatsapp || '');
+            formData.append('city', addVendorForm.city || '');
+            formData.append('country', addVendorForm.country || '');
+            formData.append('streetAddress', addVendorForm.streetAddress || '');
+            
             formData.append('shopName', addVendorForm.shopName);
             formData.append('shopAddress', addVendorForm.shopAddress);
-            if (addVendorForm.ntnNumber) formData.append('ntnNumber', addVendorForm.ntnNumber);
+            formData.append('ntnNumber', addVendorForm.ntnNumber || '');
+            formData.append('businessPhone', addVendorForm.businessPhone || '');
+            formData.append('businessWhatsapp', addVendorForm.businessWhatsapp || '');
+            formData.append('businessLandline', addVendorForm.businessLandline || '');
+            formData.append('businessEmail', addVendorForm.businessEmail || '');
+            formData.append('businessCity', addVendorForm.businessCity || '');
+            formData.append('businessCountry', addVendorForm.businessCountry || '');
+            formData.append('businessNtn', addVendorForm.businessNtn || '');
+            formData.append('businessWebsite', addVendorForm.businessWebsite || '');
+            formData.append('socialLink', addVendorForm.socialLink || '');
+            formData.append('mapLocation', addVendorForm.mapLocation || '');
+            formData.append('businessTimings', addVendorForm.businessTimings || '');
+            formData.append('businessType', addVendorForm.businessType || '');
+            formData.append('businessSubtypes', JSON.stringify(selectedSubtypeIds));
+            if (showOtherSubtype && otherSubtypeName) {
+                formData.append('otherSubtype', otherSubtypeName);
+            }
             
             if (addCnicFront) formData.append('cnicFront', addCnicFront);
             if (addCnicBack) formData.append('cnicBack', addCnicBack);
             if (addBusinessLicense) formData.append('businessLicense', addBusinessLicense);
+            if (addBusinessLogo) formData.append('businessLogo', addBusinessLogo);
+            if (addCoverImage) formData.append('coverImage', addCoverImage);
+            addGalleryImages.forEach(file => formData.append('galleryImages', file));
 
-            await axios.post(
+            const response = await axios.post(
                 `${API_URL}/api/auth/register`,
                 formData,
                 { 
@@ -308,6 +425,25 @@ export default function AdminDashboardPage() {
                     } 
                 }
             );
+
+            if (response.data.success && response.data.user && response.data.user.vendorId) {
+                let vendorId = response.data.user.vendorId;
+                vendorId = vendorId.replace(/V-0+/, 'V-');
+                
+                if (vendorId !== response.data.user.vendorId) {
+                    const userId = response.data.user.id || response.data.user._id;
+                    try {
+                        await axios.put(
+                            `${API_URL}/api/auth/vendor/${userId}/vendor-id`,
+                            { vendorId },
+                            { headers: { Authorization: `Bearer ${token}` } }
+                        );
+                        console.log(`✅ Vendor ID fixed: ${response.data.user.vendorId} -> ${vendorId}`);
+                    } catch (fixError) {
+                        console.warn('⚠️ Could not fix vendor ID in database, but vendor was created:', fixError);
+                    }
+                }
+            }
 
             setAddVendorMessage({ type: 'success', text: '✅ Vendor added successfully! Pending admin approval.' });
             
@@ -319,13 +455,42 @@ export default function AdminDashboardPage() {
                 shopName: '',
                 shopAddress: '',
                 ntnNumber: '',
+                whatsapp: '',
+                city: '',
+                country: '',
+                streetAddress: '',
+                businessPhone: '',
+                businessWhatsapp: '',
+                businessLandline: '',
+                businessEmail: '',
+                businessCity: '',
+                businessCountry: '',
+                businessNtn: '',
+                businessWebsite: '',
+                socialLink: '',
+                mapLocation: '',
+                businessTimings: '',
+                businessType: '',
+                businessSubtypes: [],
             });
+            setSelectedTypeId('');
+            setSelectedSubtypeIds([]);
+            setShowOtherSubtype(false);
+            setOtherSubtypeName('');
+            setBusinessSubtypes([]);
             setAddCnicFront(null);
             setAddCnicBack(null);
             setAddBusinessLicense(null);
+            setAddBusinessLogo(null);
+            setAddCoverImage(null);
+            setAddGalleryImages([]);
             setAddCnicFrontPreview('');
             setAddCnicBackPreview('');
             setAddBusinessLicensePreview('');
+            setAddBusinessLogoPreview('');
+            setAddCoverImagePreview('');
+            setAddGalleryPreviews([]);
+            setAddTab('personal');
             
             loadAllDashboardData();
             
@@ -344,9 +509,6 @@ export default function AdminDashboardPage() {
         }
     };
 
-    // ============================================
-    // FILTERED VENDORS
-    // ============================================
     const filteredVendors = useMemo(() => {
         let filtered = [...vendors];
 
@@ -376,9 +538,6 @@ export default function AdminDashboardPage() {
         return filtered;
     }, [vendors, searchTerm, filterStatus]);
 
-    // ============================================
-    // PAGINATION CALCULATIONS
-    // ============================================
     const totalItems = filteredVendors.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -388,27 +547,81 @@ export default function AdminDashboardPage() {
         return filteredVendors.slice(startIndex, endIndex);
     }, [filteredVendors, currentPage, itemsPerPage]);
 
-    // Reset to page 1 when filter/search changes
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, filterStatus, itemsPerPage]);
 
-    // ============================================
-    // STATS CALCULATIONS
-    // ============================================
     const totalVendors = vendors.length;
     const activeVendors = vendors.filter(v => v.status === 'approved').length;
     const pendingVendors = vendors.filter(v => v.status === 'pending').length;
+    const rejectedVendors = vendors.filter(v => v.status === 'rejected').length;
 
     const totalCustomers = customers.length;
     const activeCustomers = customers.filter(c => c.status === 'active' || c.status === 'approved').length;
+    const pendingCustomers = customers.filter(c => c.status === 'pending').length;
+    const rejectedCustomers = customers.filter(c => c.status === 'rejected' || c.status === 'blocked').length;
 
     const totalRiders = riders.length;
     const activeRiders = riders.filter(r => r.status === 'approved' || r.status === 'active').length;
+    const pendingRiders = riders.filter(r => r.status === 'pending').length;
+    const rejectedRiders = riders.filter(r => r.status === 'rejected' || r.status === 'blocked').length;
 
-    // ============================================
-    // FETCH FUNCTIONS
-    // ============================================
+    const totalEmployees = adminEmployees.length;
+    const activeEmployees = adminEmployees.filter(e => e.role !== 'inactive').length;
+    const pendingEmployees = adminEmployees.filter(e => e.role === 'pending').length;
+    const rejectedEmployees = adminEmployees.filter(e => e.role === 'rejected' || e.role === 'blocked').length;
+
+    const handleStatClick = (type: 'vendors' | 'customers' | 'riders' | 'employees', status: 'all' | 'active' | 'pending' | 'blocklist') => {
+        setDashboardFilter({ type, status });
+        setShowFilteredData(true);
+        setActiveTab('dashboard');
+    };
+
+    const clearDashboardFilter = () => {
+        setDashboardFilter({ type: null, status: null });
+        setShowFilteredData(false);
+    };
+
+    const getFilteredData = useCallback(() => {
+        if (!dashboardFilter.type || !dashboardFilter.status) return [];
+
+        let data: any[] = [];
+        switch (dashboardFilter.type) {
+            case 'vendors':
+                data = vendors;
+                break;
+            case 'customers':
+                data = customers;
+                break;
+            case 'riders':
+                data = riders;
+                break;
+            case 'employees':
+                data = adminEmployees;
+                break;
+            default:
+                return [];
+        }
+
+        if (dashboardFilter.status === 'all') return data;
+        
+        return data.filter(item => {
+            const status = item.status || item.approvalStatus || item.role || 'active';
+            if (dashboardFilter.status === 'active') {
+                return status === 'approved' || status === 'active';
+            }
+            if (dashboardFilter.status === 'pending') {
+                return status === 'pending';
+            }
+            if (dashboardFilter.status === 'blocklist') {
+                return status === 'rejected' || status === 'blocked' || status === 'inactive';
+            }
+            return true;
+        });
+    }, [dashboardFilter, vendors, customers, riders, adminEmployees]);
+
+    const filteredDashboardData = getFilteredData();
+
     const fetchWithdrawals = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
@@ -424,18 +637,31 @@ export default function AdminDashboardPage() {
         }
     }, [API_URL]);
 
+    // ✅ ONLY fetch Business subscriptions (Global subscriptions removed from frontend)
     const fetchSubscriptions = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             if (!token) return;
-            const response = await axios.get(`${API_URL}/api/auth/subscriptions`, {
+            
+            console.log('📋 [ADMIN] Fetching business subscriptions...');
+            
+            const response = await axios.get(`${API_URL}/api/auth/business-subscriptions`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (response.data.success) {
-                setSubscriptionRequests(response.data.requests || []);
+            
+            console.log('📋 Business subscriptions response:', response.data);
+            
+            if (response.data?.success && response.data?.requests) {
+                setSubscriptionRequests(response.data.requests);
+                console.log('✅ Business subscriptions loaded:', response.data.requests.length);
+            } else {
+                setSubscriptionRequests([]);
+                console.log('ℹ️ No business subscriptions found');
             }
+            
         } catch (error: any) {
             console.error('❌ Subscriptions error:', error.message);
+            setSubscriptionRequests([]);
         }
     }, [API_URL]);
 
@@ -470,13 +696,14 @@ export default function AdminDashboardPage() {
 
             await fetchWithdrawals();
             await fetchSubscriptions();
+            await fetchBusinessTypes();
 
         } catch (error: any) {
             console.error("Error loading dashboard data:", error.message);
         } finally {
             setLoading(false);
         }
-    }, [API_URL, router, fetchWithdrawals, fetchSubscriptions]);
+    }, [API_URL, router, fetchWithdrawals, fetchSubscriptions, fetchBusinessTypes]);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -488,9 +715,6 @@ export default function AdminDashboardPage() {
         loadAllDashboardData();
     }, [router, loadAllDashboardData]);
 
-    // ============================================
-    // VENDOR CRUD OPERATIONS
-    // ============================================
     const updateVendorStatus = useCallback(async (vendorId: string, status: 'approved' | 'rejected') => {
         try {
             const token = localStorage.getItem('token');
@@ -527,56 +751,78 @@ export default function AdminDashboardPage() {
         }
     }, [API_URL, loadAllDashboardData]);
 
-    // ============================================
-    // EDIT VENDOR - WITH FILE SUPPORT
-    // ============================================
     const handleEditVendor = useCallback((vendor: Vendor) => {
         setEditingVendor(vendor);
+        setEditTab('personal');
         setEditForm({
             shopName: vendor.shopName || '',
             ownerName: vendor.ownerName || '',
             email: vendor.email || '',
             phone: vendor.phone || '',
             shopAddress: vendor.shopAddress || '',
-            ntnNumber: vendor.ntnNumber || ''
+            ntnNumber: vendor.ntnNumber || '',
+            whatsapp: vendor.whatsapp || '',
+            city: vendor.city || '',
+            country: vendor.country || '',
+            streetAddress: vendor.streetAddress || '',
+            businessPhone: vendor.businessPhone || '',
+            businessWhatsapp: vendor.businessWhatsapp || '',
+            businessLandline: vendor.businessLandline || '',
+            businessEmail: vendor.businessEmail || '',
+            businessCity: vendor.businessCity || '',
+            businessCountry: vendor.businessCountry || '',
+            businessNtn: vendor.businessNtn || '',
+            businessWebsite: vendor.businessWebsite || '',
+            socialLink: vendor.socialLink || '',
+            mapLocation: vendor.mapLocation || '',
+            businessTimings: vendor.businessTimings || '',
+            businessType: vendor.businessType || '',
         });
         
         setExistingCnicFront(vendor.cnicFront || '');
         setExistingCnicBack(vendor.cnicBack || '');
         setExistingBusinessLicense(vendor.businessLicense || '');
+        setExistingBusinessLogo(vendor.businessLogo || '');
+        setExistingCoverImage(vendor.coverImage || '');
+        setExistingGalleryImages(vendor.galleryImages || []);
         
         setEditCnicFront(null);
         setEditCnicBack(null);
         setEditBusinessLicense(null);
+        setEditBusinessLogo(null);
+        setEditCoverImage(null);
+        setEditGalleryImages([]);
         setEditCnicFrontPreview('');
         setEditCnicBackPreview('');
         setEditBusinessLicensePreview('');
+        setEditBusinessLogoPreview('');
+        setEditCoverImagePreview('');
+        setEditGalleryPreviews([]);
         
         setShowEditModal(true);
     }, []);
 
-    const handleEditCnicFrontChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleEditFileChange = (e: ChangeEvent<HTMLInputElement>, setFile: (file: File | null) => void, setPreview: (preview: string) => void) => {
         const file = e.target.files?.[0];
         if (file) {
-            setEditCnicFront(file);
-            setEditCnicFrontPreview(URL.createObjectURL(file));
+            setFile(file);
+            setPreview(URL.createObjectURL(file));
         }
     };
 
-    const handleEditCnicBackChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setEditCnicBack(file);
-            setEditCnicBackPreview(URL.createObjectURL(file));
+    const handleEditGalleryChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (files) {
+            const fileArray = Array.from(files);
+            setEditGalleryImages(prev => [...prev, ...fileArray]);
+            const previews = fileArray.map(file => URL.createObjectURL(file));
+            setEditGalleryPreviews(prev => [...prev, ...previews]);
         }
     };
 
-    const handleEditBusinessLicenseChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setEditBusinessLicense(file);
-            setEditBusinessLicensePreview(URL.createObjectURL(file));
-        }
+    const removeEditGalleryImage = (index: number) => {
+        setEditGalleryImages(prev => prev.filter((_, i) => i !== index));
+        setEditGalleryPreviews(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleEditSubmit = useCallback(async (e: React.FormEvent) => {
@@ -593,10 +839,30 @@ export default function AdminDashboardPage() {
             formData.append('phone', editForm.phone);
             formData.append('shopAddress', editForm.shopAddress);
             formData.append('ntnNumber', editForm.ntnNumber);
+            formData.append('whatsapp', editForm.whatsapp);
+            formData.append('city', editForm.city);
+            formData.append('country', editForm.country);
+            formData.append('streetAddress', editForm.streetAddress);
+            
+            formData.append('businessPhone', editForm.businessPhone);
+            formData.append('businessWhatsapp', editForm.businessWhatsapp);
+            formData.append('businessLandline', editForm.businessLandline);
+            formData.append('businessEmail', editForm.businessEmail);
+            formData.append('businessCity', editForm.businessCity);
+            formData.append('businessCountry', editForm.businessCountry);
+            formData.append('businessNtn', editForm.businessNtn);
+            formData.append('businessWebsite', editForm.businessWebsite);
+            formData.append('socialLink', editForm.socialLink);
+            formData.append('mapLocation', editForm.mapLocation);
+            formData.append('businessTimings', editForm.businessTimings);
+            formData.append('businessType', editForm.businessType);
             
             if (editCnicFront) formData.append('cnicFront', editCnicFront);
             if (editCnicBack) formData.append('cnicBack', editCnicBack);
             if (editBusinessLicense) formData.append('businessLicense', editBusinessLicense);
+            if (editBusinessLogo) formData.append('businessLogo', editBusinessLogo);
+            if (editCoverImage) formData.append('coverImage', editCoverImage);
+            editGalleryImages.forEach(file => formData.append('galleryImages', file));
 
             const response = await axios.put(
                 `${API_URL}/api/auth/vendor/${editingVendor.id}`,
@@ -618,7 +884,7 @@ export default function AdminDashboardPage() {
         } catch (error: any) {
             alert(`❌ Error updating vendor: ${error.response?.data?.message || error.message}`);
         }
-    }, [API_URL, editingVendor, editForm, editCnicFront, editCnicBack, editBusinessLicense, loadAllDashboardData]);
+    }, [API_URL, editingVendor, editForm, editCnicFront, editCnicBack, editBusinessLicense, editBusinessLogo, editCoverImage, editGalleryImages, loadAllDashboardData]);
 
     const handleViewVendor = useCallback((vendor: Vendor) => {
         setSelectedVendor(vendor);
@@ -626,9 +892,6 @@ export default function AdminDashboardPage() {
         setShowVendorDetail(true);
     }, []);
 
-    // ============================================
-    // WITHDRAWAL & SUBSCRIPTION HANDLERS
-    // ============================================
     const handleWithdrawalStatus = useCallback(async (requestId: string, status: 'approved' | 'rejected' | 'processed') => {
         try {
             const token = localStorage.getItem('token');
@@ -646,26 +909,70 @@ export default function AdminDashboardPage() {
         }
     }, [API_URL, fetchWithdrawals]);
 
-    const handleSubscriptionStatus = useCallback(async (requestId: string, status: 'approved' | 'rejected') => {
+    // ✅ ✅ ✅ FIXED: Business Subscription Approve/Reject with proper error handling
+    const handleBusinessSubscriptionStatus = useCallback(async (requestId: string, status: 'approved' | 'rejected') => {
+        if (!confirm(`Are you sure you want to ${status} this business subscription request?`)) return;
+
         try {
             const token = localStorage.getItem('token');
+            if (!token) {
+                alert('Session expired. Please login again.');
+                return;
+            }
+            
+            let reason = '';
+            if (status === 'rejected') {
+                reason = prompt('Reason for rejection:') || 'No reason provided';
+            }
+            
+            // ✅ For reject, we send reason in body
+            const endpoint = status === 'approved' ? 'approve' : 'reject';
+            const payload = status === 'rejected' ? { reason } : {};
+            
+            console.log(`📋 [ADMIN] ${status} business subscription: ${requestId} -> endpoint: ${endpoint}`);
+            console.log(`📋 Payload:`, payload);
+            
             const response = await axios.put(
-                `${API_URL}/api/auth/subscription/${requestId}/status`,
-                { status },
-                { headers: { Authorization: `Bearer ${token}` } }
+                `${API_URL}/api/auth/business-subscription/${requestId}/${endpoint}`,
+                payload,
+                { 
+                    headers: { 
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    } 
+                }
             );
+
+            console.log('📋 Response:', response.data);
+
             if (response.data.success) {
-                alert(`✅ Subscription ${status} successfully!`);
+                alert(`✅ Business subscription ${status} successfully!`);
                 fetchSubscriptions();
+                loadAllDashboardData();
+            } else {
+                alert(`❌ Error: ${response.data.message || 'Unknown error'}`);
             }
         } catch (error: any) {
-            alert(`❌ Error updating subscription: ${error.response?.data?.message || error.message}`);
+            console.error('❌ Error updating business subscription:', error);
+            console.error('❌ Error response:', error.response?.data);
+            
+            let errorMsg = 'Failed to update business subscription';
+            if (error.response?.data?.message) {
+                errorMsg = error.response.data.message;
+            } else if (error.response?.status === 404) {
+                errorMsg = 'Subscription request not found. Please refresh and try again.';
+            } else if (error.response?.status === 401) {
+                errorMsg = 'Unauthorized. Please login again.';
+            } else if (error.response?.status === 500) {
+                errorMsg = 'Server error. Please check backend logs.';
+            } else if (error.message) {
+                errorMsg = error.message;
+            }
+            
+            alert(`❌ Error: ${errorMsg}`);
         }
-    }, [API_URL, fetchSubscriptions]);
+    }, [API_URL, fetchSubscriptions, loadAllDashboardData]);
 
-    // ============================================
-    // EMPLOYEE CRUD
-    // ============================================
     const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -700,9 +1007,6 @@ export default function AdminDashboardPage() {
         }
     };
 
-    // ============================================
-    // COUPON CRUD
-    // ============================================
     const handleAddCouponSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -737,9 +1041,6 @@ export default function AdminDashboardPage() {
         }
     };
 
-    // ============================================
-    // COMMISSION CRUD
-    // ============================================
     const handleAddCommissionSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -774,9 +1075,6 @@ export default function AdminDashboardPage() {
         }
     };
 
-    // ============================================
-    // ANNOUNCEMENT CRUD
-    // ============================================
     const handleAddAnnouncementSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -812,14 +1110,14 @@ export default function AdminDashboardPage() {
     };
 
     // ============================================
-    // ADD VENDOR MODAL
+    // RENDER ADD VENDOR MODAL
     // ============================================
     const renderAddVendorModal = () => {
         if (!showAddVendorModal) return null;
 
         return (
             <div className={styles.modalOverlay} onClick={() => setShowAddVendorModal(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto' }}>
                     <div className={styles.modalHeader}>
                         <h3 className={styles.modalTitle}>➕ Add Vendor</h3>
                         <button className={styles.modalClose} onClick={() => setShowAddVendorModal(false)}>×</button>
@@ -831,181 +1129,537 @@ export default function AdminDashboardPage() {
                         </div>
                     )}
 
+                    <div className={styles.detailTabs}>
+                        <button 
+                            className={`${styles.detailTab} ${addTab === 'personal' ? styles.detailTabActive : ''}`}
+                            onClick={() => setAddTab('personal')}
+                        >
+                            👤 Personal Info
+                        </button>
+                        <button 
+                            className={`${styles.detailTab} ${addTab === 'business' ? styles.detailTabActive : ''}`}
+                            onClick={() => setAddTab('business')}
+                        >
+                            🏪 Business Info
+                        </button>
+                    </div>
+
                     <form onSubmit={handleAddVendorSubmit}>
-                        <div className={styles.editDivider}>
-                            <span>👤 Personal Information</span>
-                        </div>
-
-                        <div className={styles.editGrid}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Full Name *</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    placeholder="Enter full name"
-                                    value={addVendorForm.name}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, name: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Email *</label>
-                                <input
-                                    type="email"
-                                    className={styles.formInput}
-                                    placeholder="Enter email"
-                                    value={addVendorForm.email}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, email: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Phone *</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    placeholder="Enter phone number"
-                                    value={addVendorForm.phone}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, phone: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Password *</label>
-                                <input
-                                    type="password"
-                                    className={styles.formInput}
-                                    placeholder="Create password"
-                                    value={addVendorForm.password}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, password: e.target.value })}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className={styles.editDivider}>
-                            <span>🏪 Business Information</span>
-                        </div>
-
-                        <div className={styles.editGrid}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Shop Name *</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    placeholder="Enter shop name"
-                                    value={addVendorForm.shopName}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, shopName: e.target.value })}
-                                    required
-                                />
-                            </div>
-
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>NTN Number</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    placeholder="Enter NTN (optional)"
-                                    value={addVendorForm.ntnNumber}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, ntnNumber: e.target.value })}
-                                />
-                            </div>
-
-                            <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                                <label className={styles.formLabel}>Shop Address *</label>
-                                <input
-                                    type="text"
-                                    className={styles.formInput}
-                                    placeholder="Enter shop address"
-                                    value={addVendorForm.shopAddress}
-                                    onChange={(e) => setAddVendorForm({ ...addVendorForm, shopAddress: e.target.value })}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        <div className={styles.editDivider}>
-                            <span>📄 Documents</span>
-                        </div>
-
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Business License <span className={styles.optionalLabel}>(Optional)</span></label>
-                            <div className={styles.uploadBoxModern}>
-                                <label className={styles.uploadLabelModern}>
-                                    <span className={styles.uploadIconModern}>📄</span>
-                                    {addBusinessLicensePreview ? 'Change Business License' : 'Upload Business License'}
-                                    <input
-                                        type="file"
-                                        accept="image/*,.pdf"
-                                        onChange={(e) => handleAddVendorFileChange(e, setAddBusinessLicense, setAddBusinessLicensePreview)}
-                                        className={styles.uploadInput}
-                                    />
-                                </label>
-                                {addBusinessLicensePreview && (
-                                    <div className={styles.previewContainerModern}>
-                                        <img src={addBusinessLicensePreview} alt="Business License" className={styles.previewImageModern} />
-                                        <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddBusinessLicense, setAddBusinessLicensePreview)}>
-                                            ✕
-                                        </button>
+                        {addTab === 'personal' && (
+                            <div className={styles.detailTabContent}>
+                                <div className={styles.editDivider}><span>👤 Personal Information</span></div>
+                                <div className={styles.editGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Full Name *</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter full name"
+                                            value={addVendorForm.name}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, name: e.target.value })}
+                                            required
+                                        />
                                     </div>
-                                )}
-                            </div>
-                        </div>
 
-                        <div className={styles.cnicRow}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>CNIC Front *</label>
-                                <div className={styles.uploadBoxModern}>
-                                    <label className={styles.uploadLabelModern}>
-                                        <span className={styles.uploadIconModern}>🪪</span>
-                                        {addCnicFrontPreview ? 'Change CNIC Front' : 'Upload CNIC Front'}
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Email *</label>
                                         <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => handleAddVendorFileChange(e, setAddCnicFront, setAddCnicFrontPreview)}
-                                            className={styles.uploadInput}
-                                            required={!addCnicFrontPreview}
+                                            type="email"
+                                            className={styles.formInput}
+                                            placeholder="Enter email"
+                                            value={addVendorForm.email}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, email: e.target.value })}
+                                            required
                                         />
-                                    </label>
-                                    {addCnicFrontPreview && (
-                                        <div className={styles.previewContainerModern}>
-                                            <img src={addCnicFrontPreview} alt="CNIC Front" className={styles.previewImageModern} />
-                                            <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddCnicFront, setAddCnicFrontPreview)}>
-                                                ✕
-                                            </button>
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Phone *</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter phone number"
+                                            value={addVendorForm.phone}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, phone: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Password *</label>
+                                        <input
+                                            type="password"
+                                            className={styles.formInput}
+                                            placeholder="Create password"
+                                            value={addVendorForm.password}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, password: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Street Address</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter street address"
+                                            value={addVendorForm.streetAddress}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, streetAddress: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>City</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter city"
+                                            value={addVendorForm.city}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, city: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Country</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter country"
+                                            value={addVendorForm.country}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, country: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>WhatsApp Number</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter WhatsApp number"
+                                            value={addVendorForm.whatsapp}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, whatsapp: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>CNIC Number</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter CNIC number"
+                                            value={addVendorForm.ntnNumber}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, ntnNumber: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className={styles.editDivider}><span>📄 Documents</span></div>
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.formLabel}>Business License <span className={styles.optionalLabel}>(Optional)</span></label>
+                                    <div className={styles.uploadBoxModern}>
+                                        <label className={styles.uploadLabelModern}>
+                                            <span className={styles.uploadIconModern}>📄</span>
+                                            {addBusinessLicensePreview ? 'Change Business License' : 'Upload Business License'}
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={(e) => handleAddVendorFileChange(e, setAddBusinessLicense, setAddBusinessLicensePreview)}
+                                                className={styles.uploadInput}
+                                            />
+                                        </label>
+                                        {addBusinessLicensePreview && (
+                                            <div className={styles.previewContainerModern}>
+                                                <img src={addBusinessLicensePreview} alt="Business License" className={styles.previewImageModern} />
+                                                <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddBusinessLicense, setAddBusinessLicensePreview)}>
+                                                    ✕
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={styles.cnicRow}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>CNIC Front *</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🪪</span>
+                                                {addCnicFrontPreview ? 'Change CNIC Front' : 'Upload CNIC Front'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleAddVendorFileChange(e, setAddCnicFront, setAddCnicFrontPreview)}
+                                                    className={styles.uploadInput}
+                                                    required={!addCnicFrontPreview}
+                                                />
+                                            </label>
+                                            {addCnicFrontPreview && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={addCnicFrontPreview} alt="CNIC Front" className={styles.previewImageModern} />
+                                                    <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddCnicFront, setAddCnicFrontPreview)}>
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>CNIC Back *</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🪪</span>
+                                                {addCnicBackPreview ? 'Change CNIC Back' : 'Upload CNIC Back'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleAddVendorFileChange(e, setAddCnicBack, setAddCnicBackPreview)}
+                                                    className={styles.uploadInput}
+                                                    required={!addCnicBackPreview}
+                                                />
+                                            </label>
+                                            {addCnicBackPreview && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={addCnicBackPreview} alt="CNIC Back" className={styles.previewImageModern} />
+                                                    <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddCnicBack, setAddCnicBackPreview)}>
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+                        )}
 
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>CNIC Back *</label>
-                                <div className={styles.uploadBoxModern}>
-                                    <label className={styles.uploadLabelModern}>
-                                        <span className={styles.uploadIconModern}>🪪</span>
-                                        {addCnicBackPreview ? 'Change CNIC Back' : 'Upload CNIC Back'}
+                        {addTab === 'business' && (
+                            <div className={styles.detailTabContent}>
+                                <div className={styles.editDivider}><span>🏪 Business Information</span></div>
+                                <div className={styles.editGrid}>
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Shop Name *</label>
                                         <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => handleAddVendorFileChange(e, setAddCnicBack, setAddCnicBackPreview)}
-                                            className={styles.uploadInput}
-                                            required={!addCnicBackPreview}
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter shop name"
+                                            value={addVendorForm.shopName}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, shopName: e.target.value })}
+                                            required
                                         />
-                                    </label>
-                                    {addCnicBackPreview && (
-                                        <div className={styles.previewContainerModern}>
-                                            <img src={addCnicBackPreview} alt="CNIC Back" className={styles.previewImageModern} />
-                                            <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddCnicBack, setAddCnicBackPreview)}>
-                                                ✕
-                                            </button>
+                                    </div>
+
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Business Category *</label>
+                                        <select
+                                            className={styles.formSelect}
+                                            value={addVendorForm.businessType}
+                                            onChange={(e) => {
+                                                const typeId = e.target.value;
+                                                setAddVendorForm({ ...addVendorForm, businessType: typeId, businessSubtypes: [] });
+                                                setSelectedTypeId(typeId);
+                                                setSelectedSubtypeIds([]);
+                                                if (typeId) {
+                                                    fetchSubtypesByType(typeId);
+                                                } else {
+                                                    setBusinessSubtypes([]);
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Select Business Category</option>
+                                            {businessTypes.map((type) => (
+                                                <option key={type._id} value={type._id}>
+                                                    {type.icon || '📌'} {type.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {businessSubtypes.length > 0 && (
+                                        <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                            <label className={styles.formLabel}>Sub Categories (Select multiple)</label>
+                                            <div className={styles.subtypeGrid}>
+                                                {businessSubtypes.map((sub) => (
+                                                    <div key={sub._id} className={styles.subtypeOption}>
+                                                        <label>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedSubtypeIds.includes(sub._id)}
+                                                                onChange={() => {
+                                                                    setSelectedSubtypeIds(prev =>
+                                                                        prev.includes(sub._id)
+                                                                            ? prev.filter(id => id !== sub._id)
+                                                                            : [...prev, sub._id]
+                                                                    );
+                                                                    setAddVendorForm({
+                                                                        ...addVendorForm,
+                                                                        businessSubtypes: selectedSubtypeIds.includes(sub._id)
+                                                                            ? addVendorForm.businessSubtypes.filter(id => id !== sub._id)
+                                                                            : [...addVendorForm.businessSubtypes, sub._id]
+                                                                    });
+                                                                }}
+                                                            />
+                                                            {sub.name}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                                <div className={styles.subtypeOption}>
+                                                    <label>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={showOtherSubtype}
+                                                            onChange={() => {
+                                                                setShowOtherSubtype(!showOtherSubtype);
+                                                                if (!showOtherSubtype) {
+                                                                    setSelectedSubtypeIds(prev => [...prev, 'other']);
+                                                                } else {
+                                                                    setSelectedSubtypeIds(prev => prev.filter(id => id !== 'other'));
+                                                                    setOtherSubtypeName('');
+                                                                }
+                                                            }}
+                                                        />
+                                                        Other
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {showOtherSubtype && (
+                                                <input
+                                                    type="text"
+                                                    className={styles.formInput}
+                                                    placeholder="Specify other category"
+                                                    value={otherSubtypeName}
+                                                    onChange={(e) => setOtherSubtypeName(e.target.value)}
+                                                    style={{ marginTop: '10px' }}
+                                                />
+                                            )}
+                                            {selectedSubtypeIds.length > 0 && (
+                                                <div style={{ marginTop: '8px', fontSize: '13px', color: '#4a6cf7' }}>
+                                                    ✅ {selectedSubtypeIds.length} sub-categorie(s) selected
+                                                </div>
+                                            )}
                                         </div>
                                     )}
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business NTN</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business NTN"
+                                            value={addVendorForm.businessNtn}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessNtn: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Phone</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business phone"
+                                            value={addVendorForm.businessPhone}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessPhone: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business WhatsApp</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business WhatsApp"
+                                            value={addVendorForm.businessWhatsapp}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessWhatsapp: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Landline</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business landline"
+                                            value={addVendorForm.businessLandline}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessLandline: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Email</label>
+                                        <input
+                                            type="email"
+                                            className={styles.formInput}
+                                            placeholder="Enter business email"
+                                            value={addVendorForm.businessEmail}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessEmail: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business City</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business city"
+                                            value={addVendorForm.businessCity}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessCity: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Country</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business country"
+                                            value={addVendorForm.businessCountry}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessCountry: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Business Website</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter business website"
+                                            value={addVendorForm.businessWebsite}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, businessWebsite: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Social Link</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter social link"
+                                            value={addVendorForm.socialLink}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, socialLink: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Map Location</label>
+                                        <input
+                                            type="text"
+                                            className={styles.formInput}
+                                            placeholder="Enter map location URL"
+                                            value={addVendorForm.mapLocation}
+                                            onChange={(e) => setAddVendorForm({ ...addVendorForm, mapLocation: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className={styles.editDivider}><span>🕐 Business Timings</span></div>
+                                <div className={styles.formGroup}>
+                                    <input
+                                        type="text"
+                                        className={styles.formInput}
+                                        placeholder="e.g., Mon-Fri: 9AM-6PM, Sat: 10AM-2PM"
+                                        value={addVendorForm.businessTimings}
+                                        onChange={(e) => setAddVendorForm({ ...addVendorForm, businessTimings: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className={styles.editDivider}><span>🖼️ Business Media</span></div>
+                                
+                                <div className={styles.editGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Logo</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🖼️</span>
+                                                {addBusinessLogoPreview ? 'Change Logo' : 'Upload Logo'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleAddVendorFileChange(e, setAddBusinessLogo, setAddBusinessLogoPreview)}
+                                                    className={styles.uploadInput}
+                                                />
+                                            </label>
+                                            {addBusinessLogoPreview && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={addBusinessLogoPreview} alt="Business Logo" className={styles.previewImageModern} />
+                                                    <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddBusinessLogo, setAddBusinessLogoPreview)}>
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Cover Image</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🖼️</span>
+                                                {addCoverImagePreview ? 'Change Cover' : 'Upload Cover'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleAddVendorFileChange(e, setAddCoverImage, setAddCoverImagePreview)}
+                                                    className={styles.uploadInput}
+                                                />
+                                            </label>
+                                            {addCoverImagePreview && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={addCoverImagePreview} alt="Cover Image" className={styles.previewImageModern} />
+                                                    <button type="button" className={styles.removeBtnModern} onClick={() => removeAddVendorFile(setAddCoverImage, setAddCoverImagePreview)}>
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.formLabel}>Gallery Images</label>
+                                    <div className={styles.uploadBoxModern}>
+                                        <label className={styles.uploadLabelModern}>
+                                            <span className={styles.uploadIconModern}>🖼️</span>
+                                            Upload Gallery Images
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={(e) => {
+                                                    const files = e.target.files;
+                                                    if (files) {
+                                                        const fileArray = Array.from(files);
+                                                        setAddGalleryImages(prev => [...prev, ...fileArray]);
+                                                        const previews = fileArray.map(file => URL.createObjectURL(file));
+                                                        setAddGalleryPreviews(prev => [...prev, ...previews]);
+                                                    }
+                                                }}
+                                                className={styles.uploadInput}
+                                            />
+                                        </label>
+
+                                        {addGalleryPreviews.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                                                {addGalleryPreviews.map((preview, idx) => (
+                                                    <div key={`add-gallery-${idx}`} style={{ position: 'relative', width: '80px', height: '80px', border: '2px solid #4a6cf7', borderRadius: '8px', overflow: 'hidden' }}>
+                                                        <img src={preview} alt={`Gallery ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                setAddGalleryImages(prev => prev.filter((_, i) => i !== idx));
+                                                                setAddGalleryPreviews(prev => prev.filter((_, i) => i !== idx));
+                                                            }} 
+                                                            style={{ position: 'absolute', top: '2px', right: '2px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px' }}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className={styles.editActions}>
                             <button type="submit" className={styles.saveBtn} disabled={addVendorLoading}>
@@ -1021,9 +1675,6 @@ export default function AdminDashboardPage() {
         );
     };
 
-    // ============================================
-    // VENDOR DETAIL MODAL
-    // ============================================
     const renderVendorDetailModal = useCallback(() => {
         if (!showVendorDetail || !selectedVendor) return null;
 
@@ -1074,7 +1725,6 @@ export default function AdminDashboardPage() {
                         </button>
                     </div>
 
-                    {/* Personal Tab */}
                     {vendorDetailTab === 'personal' && (
                         <div className={styles.detailTabContent}>
                             <div className={styles.detailTwoColumn}>
@@ -1177,7 +1827,6 @@ export default function AdminDashboardPage() {
                         </div>
                     )}
 
-                    {/* Business Tab */}
                     {vendorDetailTab === 'business' && (
                         <div className={styles.detailTabContent}>
                             <div className={styles.detailTwoColumn}>
@@ -1187,16 +1836,18 @@ export default function AdminDashboardPage() {
                                         <p className={styles.detailValue}>{selectedVendor.shopName}</p>
                                     </div>
                                     <div className={styles.detailItem}>
-                                        <label className={styles.detailLabel}>Business NTN</label>
-                                        <p className={styles.detailValue}>{selectedVendor.businessNtn || selectedVendor.ntnNumber || 'N/A'}</p>
-                                    </div>
-                                    <div className={styles.detailItem}>
-                                        <label className={styles.detailLabel}>Business License</label>
+                                        <label className={styles.detailLabel}>Business Type</label>
                                         <p className={styles.detailValue}>
-                                            {businessLicenseUrl ? (
-                                                <a href={businessLicenseUrl} target="_blank" rel="noopener noreferrer" className={styles.detailDocBtn}>📄 View License</a>
+                                            {selectedVendor.businessType ? (
+                                                <span className={styles.businessTypeBadge}>
+                                                    {selectedVendor.businessType.charAt(0).toUpperCase() + selectedVendor.businessType.slice(1)}
+                                                </span>
                                             ) : 'N/A'}
                                         </p>
+                                    </div>
+                                    <div className={styles.detailItem}>
+                                        <label className={styles.detailLabel}>Business NTN</label>
+                                        <p className={styles.detailValue}>{selectedVendor.businessNtn || selectedVendor.ntnNumber || 'N/A'}</p>
                                     </div>
                                     <div className={styles.detailItem}>
                                         <label className={styles.detailLabel}>Business Phone</label>
@@ -1254,6 +1905,30 @@ export default function AdminDashboardPage() {
                                                 </a>
                                             ) : 'N/A'}
                                         </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={styles.detailDocumentsSection}>
+                                <div className={styles.detailSectionTitle}>
+                                    <span>📄 Business License</span>
+                                </div>
+                                <div className={styles.detailDocumentsGrid} style={{ gridTemplateColumns: '1fr' }}>
+                                    <div className={styles.detailDocBox}>
+                                        <label className={styles.detailDocLabel}>Business License Document</label>
+                                        <div className={styles.detailDocWrapper}>
+                                            {businessLicenseUrl ? (
+                                                <>
+                                                    <img src={businessLicenseUrl} alt="Business License" className={styles.detailDocImage} onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                                                    <a href={businessLicenseUrl} target="_blank" rel="noopener noreferrer" className={styles.detailDocBtn}>🔍 View Full License</a>
+                                                </>
+                                            ) : (
+                                                <div className={styles.detailDocEmpty}>
+                                                    <span style={{ fontSize: '24px', display: 'block', marginBottom: '8px' }}>📄</span>
+                                                    No business license uploaded
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1330,122 +2005,313 @@ export default function AdminDashboardPage() {
         );
     }, [showVendorDetail, selectedVendor, vendorDetailTab, updateVendorStatus]);
 
-    // ============================================
-    // EDIT MODAL
-    // ============================================
     const renderEditModal = useCallback(() => {
         if (!showEditModal || !editingVendor) return null;
 
         const displayCnicFront = editCnicFrontPreview || (existingCnicFront ? getImageUrl(existingCnicFront) : '');
         const displayCnicBack = editCnicBackPreview || (existingCnicBack ? getImageUrl(existingCnicBack) : '');
         const displayBusinessLicense = editBusinessLicensePreview || (existingBusinessLicense ? getImageUrl(existingBusinessLicense) : '');
+        const displayBusinessLogo = editBusinessLogoPreview || (existingBusinessLogo ? getImageUrl(existingBusinessLogo) : '');
+        const displayCoverImage = editCoverImagePreview || (existingCoverImage ? getImageUrl(existingCoverImage) : '');
 
         return (
             <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
-                <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+                <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '750px' }}>
                     <div className={styles.modalHeader}>
                         <h3 className={styles.modalTitle}>✏️ Edit Vendor</h3>
                         <button className={styles.modalClose} onClick={() => setShowEditModal(false)}>×</button>
                     </div>
 
+                    <div className={styles.detailTabs}>
+                        <button 
+                            className={`${styles.detailTab} ${editTab === 'personal' ? styles.detailTabActive : ''}`}
+                            onClick={() => setEditTab('personal')}
+                        >
+                            👤 Personal Info
+                        </button>
+                        <button 
+                            className={`${styles.detailTab} ${editTab === 'business' ? styles.detailTabActive : ''}`}
+                            onClick={() => setEditTab('business')}
+                        >
+                            🏪 Business Info
+                        </button>
+                    </div>
+
                     <form onSubmit={handleEditSubmit}>
-                        <div className={styles.editGrid}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Shop Name *</label>
-                                <input type="text" className={styles.formInput} value={editForm.shopName} onChange={(e) => setEditForm({ ...editForm, shopName: e.target.value })} required />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Owner Name *</label>
-                                <input type="text" className={styles.formInput} value={editForm.ownerName} onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })} required />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Email *</label>
-                                <input type="email" className={styles.formInput} value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} required />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>Phone</label>
-                                <input type="text" className={styles.formInput} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
-                            </div>
-                            <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
-                                <label className={styles.formLabel}>Shop Address</label>
-                                <input type="text" className={styles.formInput} value={editForm.shopAddress} onChange={(e) => setEditForm({ ...editForm, shopAddress: e.target.value })} />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>NTN Number</label>
-                                <input type="text" className={styles.formInput} value={editForm.ntnNumber} onChange={(e) => setEditForm({ ...editForm, ntnNumber: e.target.value })} />
-                            </div>
-                        </div>
-
-                        <div className={styles.editDivider}>
-                            <span>📄 Documents</span>
-                        </div>
-
-                        <div className={styles.formGroup}>
-                            <label className={styles.formLabel}>Business License <span className={styles.optionalLabel}>(Optional)</span></label>
-                            <div className={styles.uploadBoxModern}>
-                                <label className={styles.uploadLabelModern}>
-                                    <span className={styles.uploadIconModern}>📄</span>
-                                    {displayBusinessLicense ? 'Change Business License' : 'Upload Business License'}
-                                    <input
-                                        type="file"
-                                        accept="image/*,.pdf"
-                                        onChange={handleEditBusinessLicenseChange}
-                                        className={styles.uploadInput}
-                                    />
-                                </label>
-                                {displayBusinessLicense && (
-                                    <div className={styles.previewContainerModern}>
-                                        <img src={displayBusinessLicense} alt="Business License" className={styles.previewImageModern} />
-                                        <button type="button" onClick={() => { setEditBusinessLicense(null); setEditBusinessLicensePreview(''); setExistingBusinessLicense(''); }} className={styles.removeBtnModern}>✕</button>
+                        {editTab === 'personal' && (
+                            <div className={styles.detailTabContent}>
+                                <div className={styles.editDivider}><span>👤 Personal Information</span></div>
+                                <div className={styles.editGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Full Name *</label>
+                                        <input type="text" className={styles.formInput} value={editForm.ownerName} onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })} required />
                                     </div>
-                                )}
-                            </div>
-                        </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Email *</label>
+                                        <input type="email" className={styles.formInput} value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} required />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Phone *</label>
+                                        <input type="text" className={styles.formInput} value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} required />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>WhatsApp Number</label>
+                                        <input type="text" className={styles.formInput} value={editForm.whatsapp} onChange={(e) => setEditForm({ ...editForm, whatsapp: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Street Address</label>
+                                        <input type="text" className={styles.formInput} value={editForm.streetAddress} onChange={(e) => setEditForm({ ...editForm, streetAddress: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>City</label>
+                                        <input type="text" className={styles.formInput} value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Country</label>
+                                        <input type="text" className={styles.formInput} value={editForm.country} onChange={(e) => setEditForm({ ...editForm, country: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>CNIC Number</label>
+                                        <input type="text" className={styles.formInput} value={editForm.ntnNumber} onChange={(e) => setEditForm({ ...editForm, ntnNumber: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Shop Address</label>
+                                        <input type="text" className={styles.formInput} value={editForm.shopAddress} onChange={(e) => setEditForm({ ...editForm, shopAddress: e.target.value })} />
+                                    </div>
+                                </div>
 
-                        <div className={styles.cnicRow}>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>CNIC Front</label>
-                                <div className={styles.uploadBoxModern}>
-                                    <label className={styles.uploadLabelModern}>
-                                        <span className={styles.uploadIconModern}>🪪</span>
-                                        {displayCnicFront ? 'Change CNIC Front' : 'Upload CNIC Front'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleEditCnicFrontChange}
-                                            className={styles.uploadInput}
-                                        />
-                                    </label>
-                                    {displayCnicFront && (
-                                        <div className={styles.previewContainerModern}>
-                                            <img src={displayCnicFront} alt="CNIC Front" className={styles.previewImageModern} />
-                                            <button type="button" onClick={() => { setEditCnicFront(null); setEditCnicFrontPreview(''); setExistingCnicFront(''); }} className={styles.removeBtnModern}>✕</button>
+                                <div className={styles.editDivider}><span>📄 Documents</span></div>
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.formLabel}>Business License <span className={styles.optionalLabel}>(Optional)</span></label>
+                                    <div className={styles.uploadBoxModern}>
+                                        <label className={styles.uploadLabelModern}>
+                                            <span className={styles.uploadIconModern}>📄</span>
+                                            {displayBusinessLicense ? 'Change Business License' : 'Upload Business License'}
+                                            <input
+                                                type="file"
+                                                accept="image/*,.pdf"
+                                                onChange={(e) => handleEditFileChange(e, setEditBusinessLicense, setEditBusinessLicensePreview)}
+                                                className={styles.uploadInput}
+                                            />
+                                        </label>
+                                        {displayBusinessLicense && (
+                                            <div className={styles.previewContainerModern}>
+                                                <img src={displayBusinessLicense} alt="Business License" className={styles.previewImageModern} />
+                                                <button type="button" onClick={() => { setEditBusinessLicense(null); setEditBusinessLicensePreview(''); setExistingBusinessLicense(''); }} className={styles.removeBtnModern}>✕</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className={styles.cnicRow}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>CNIC Front</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🪪</span>
+                                                {displayCnicFront ? 'Change CNIC Front' : 'Upload CNIC Front'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleEditFileChange(e, setEditCnicFront, setEditCnicFrontPreview)}
+                                                    className={styles.uploadInput}
+                                                />
+                                            </label>
+                                            {displayCnicFront && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={displayCnicFront} alt="CNIC Front" className={styles.previewImageModern} />
+                                                    <button type="button" onClick={() => { setEditCnicFront(null); setEditCnicFrontPreview(''); setExistingCnicFront(''); }} className={styles.removeBtnModern}>✕</button>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>CNIC Back</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🪪</span>
+                                                {displayCnicBack ? 'Change CNIC Back' : 'Upload CNIC Back'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleEditFileChange(e, setEditCnicBack, setEditCnicBackPreview)}
+                                                    className={styles.uploadInput}
+                                                />
+                                            </label>
+                                            {displayCnicBack && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={displayCnicBack} alt="CNIC Back" className={styles.previewImageModern} />
+                                                    <button type="button" onClick={() => { setEditCnicBack(null); setEditCnicBackPreview(''); setExistingCnicBack(''); }} className={styles.removeBtnModern}>✕</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div className={styles.formGroup}>
-                                <label className={styles.formLabel}>CNIC Back</label>
-                                <div className={styles.uploadBoxModern}>
-                                    <label className={styles.uploadLabelModern}>
-                                        <span className={styles.uploadIconModern}>🪪</span>
-                                        {displayCnicBack ? 'Change CNIC Back' : 'Upload CNIC Back'}
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleEditCnicBackChange}
-                                            className={styles.uploadInput}
-                                        />
-                                    </label>
-                                    {displayCnicBack && (
-                                        <div className={styles.previewContainerModern}>
-                                            <img src={displayCnicBack} alt="CNIC Back" className={styles.previewImageModern} />
-                                            <button type="button" onClick={() => { setEditCnicBack(null); setEditCnicBackPreview(''); setExistingCnicBack(''); }} className={styles.removeBtnModern}>✕</button>
+                        )}
+
+                        {editTab === 'business' && (
+                            <div className={styles.detailTabContent}>
+                                <div className={styles.editDivider}><span>🏪 Business Information</span></div>
+                                <div className={styles.editGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Shop Name *</label>
+                                        <input type="text" className={styles.formInput} value={editForm.shopName} onChange={(e) => setEditForm({ ...editForm, shopName: e.target.value })} required />
+                                    </div>
+
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Business Type</label>
+                                        <select
+                                            className={styles.formSelect}
+                                            value={editForm.businessType}
+                                            onChange={(e) => setEditForm({ ...editForm, businessType: e.target.value })}
+                                        >
+                                            <option value="">Select Business Type</option>
+                                            <option value="retail">🛍️ Retail</option>
+                                            <option value="wholesale">📦 Wholesale</option>
+                                            <option value="manufacturing">🏭 Manufacturing</option>
+                                            <option value="services">💼 Services</option>
+                                            <option value="ecommerce">🖥️ E-Commerce</option>
+                                            <option value="restaurant">🍽️ Restaurant</option>
+                                            <option value="other">📌 Other</option>
+                                        </select>
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business NTN</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessNtn} onChange={(e) => setEditForm({ ...editForm, businessNtn: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Phone</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessPhone} onChange={(e) => setEditForm({ ...editForm, businessPhone: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business WhatsApp</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessWhatsapp} onChange={(e) => setEditForm({ ...editForm, businessWhatsapp: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Landline</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessLandline} onChange={(e) => setEditForm({ ...editForm, businessLandline: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Email</label>
+                                        <input type="email" className={styles.formInput} value={editForm.businessEmail} onChange={(e) => setEditForm({ ...editForm, businessEmail: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business City</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessCity} onChange={(e) => setEditForm({ ...editForm, businessCity: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Country</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessCountry} onChange={(e) => setEditForm({ ...editForm, businessCountry: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Business Website</label>
+                                        <input type="text" className={styles.formInput} value={editForm.businessWebsite} onChange={(e) => setEditForm({ ...editForm, businessWebsite: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Social Link</label>
+                                        <input type="text" className={styles.formInput} value={editForm.socialLink} onChange={(e) => setEditForm({ ...editForm, socialLink: e.target.value })} />
+                                    </div>
+                                    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                                        <label className={styles.formLabel}>Map Location</label>
+                                        <input type="text" className={styles.formInput} value={editForm.mapLocation} onChange={(e) => setEditForm({ ...editForm, mapLocation: e.target.value })} />
+                                    </div>
+                                </div>
+
+                                <div className={styles.editDivider}><span>🕐 Business Timings</span></div>
+                                <div className={styles.formGroup}>
+                                    <input type="text" className={styles.formInput} placeholder="e.g., Mon-Fri: 9AM-6PM" value={editForm.businessTimings} onChange={(e) => setEditForm({ ...editForm, businessTimings: e.target.value })} />
+                                </div>
+
+                                <div className={styles.editDivider}><span>🖼️ Business Media</span></div>
+                                
+                                <div className={styles.editGrid}>
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Business Logo</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🖼️</span>
+                                                {displayBusinessLogo ? 'Change Logo' : 'Upload Logo'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleEditFileChange(e, setEditBusinessLogo, setEditBusinessLogoPreview)}
+                                                    className={styles.uploadInput}
+                                                />
+                                            </label>
+                                            {displayBusinessLogo && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={displayBusinessLogo} alt="Business Logo" className={styles.previewImageModern} />
+                                                    <button type="button" onClick={() => { setEditBusinessLogo(null); setEditBusinessLogoPreview(''); setExistingBusinessLogo(''); }} className={styles.removeBtnModern}>✕</button>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
+
+                                    <div className={styles.formGroup}>
+                                        <label className={styles.formLabel}>Cover Image</label>
+                                        <div className={styles.uploadBoxModern}>
+                                            <label className={styles.uploadLabelModern}>
+                                                <span className={styles.uploadIconModern}>🖼️</span>
+                                                {displayCoverImage ? 'Change Cover' : 'Upload Cover'}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleEditFileChange(e, setEditCoverImage, setEditCoverImagePreview)}
+                                                    className={styles.uploadInput}
+                                                />
+                                            </label>
+                                            {displayCoverImage && (
+                                                <div className={styles.previewContainerModern}>
+                                                    <img src={displayCoverImage} alt="Cover Image" className={styles.previewImageModern} />
+                                                    <button type="button" onClick={() => { setEditCoverImage(null); setEditCoverImagePreview(''); setExistingCoverImage(''); }} className={styles.removeBtnModern}>✕</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                    <label className={styles.formLabel}>Gallery Images</label>
+                                    <div className={styles.uploadBoxModern}>
+                                        <label className={styles.uploadLabelModern}>
+                                            <span className={styles.uploadIconModern}>🖼️</span>
+                                            Upload Gallery Images
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleEditGalleryChange}
+                                                className={styles.uploadInput}
+                                            />
+                                        </label>
+                                        
+                                        {existingGalleryImages.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                                                {existingGalleryImages.map((img, idx) => (
+                                                    <div key={`existing-${idx}`} style={{ position: 'relative', width: '80px', height: '80px', border: '2px solid #e4e9f2', borderRadius: '8px', overflow: 'hidden' }}>
+                                                        <img src={getImageUrl(img)} alt={`Gallery ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {editGalleryPreviews.length > 0 && (
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
+                                                {editGalleryPreviews.map((preview, idx) => (
+                                                    <div key={`new-${idx}`} style={{ position: 'relative', width: '80px', height: '80px', border: '2px solid #4a6cf7', borderRadius: '8px', overflow: 'hidden' }}>
+                                                        <img src={preview} alt={`New Gallery ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                        <button type="button" onClick={() => removeEditGalleryImage(idx)} style={{ position: 'absolute', top: '2px', right: '2px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '12px' }}>✕</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className={styles.editActions}>
                             <button type="submit" className={styles.saveBtn}>💾 Save Changes</button>
@@ -1455,11 +2321,11 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
         );
-    }, [showEditModal, editingVendor, editForm, existingCnicFront, existingCnicBack, existingBusinessLicense, editCnicFrontPreview, editCnicBackPreview, editBusinessLicensePreview, handleEditSubmit]);
+    }, [showEditModal, editingVendor, editForm, editTab, 
+        existingCnicFront, existingCnicBack, existingBusinessLicense, existingBusinessLogo, existingCoverImage, existingGalleryImages,
+        editCnicFrontPreview, editCnicBackPreview, editBusinessLicensePreview, editBusinessLogoPreview, editCoverImagePreview, editGalleryPreviews,
+        handleEditSubmit]);
 
-    // ============================================
-    // RENDER VENDORS TABLE - WITH PAGINATION (UPDATED)
-    // ============================================
     const renderVendors = useCallback(() => (
         <div className={styles.section}>
             <div className={styles.sectionHeader}>
@@ -1500,7 +2366,6 @@ export default function AdminDashboardPage() {
                 </div>
             </div>
 
-            {/* ✅ PAGINATION CONTROLS - UPDATED */}
             <div className={styles.paginationControls}>
                 <div className={styles.perPageWrapper}>
                     <span className={styles.perPageLabel}>Entries</span>
@@ -1584,7 +2449,6 @@ export default function AdminDashboardPage() {
                 </table>
             </div>
 
-            {/* ✅ PAGINATION FOOTER - UPDATED with ellipsis */}
             {totalItems > 0 && (
                 <div className={styles.paginationFooter}>
                     <div className={styles.paginationButtons}>
@@ -1597,20 +2461,13 @@ export default function AdminDashboardPage() {
                         </button>
                         
                         <div className={styles.pageNumbers}>
-                            {/* Always show first page */}
                             {totalPages > 5 && currentPage > 3 && (
                                 <>
-                                    <button
-                                        className={styles.pageNumBtn}
-                                        onClick={() => setCurrentPage(1)}
-                                    >
-                                        1
-                                    </button>
+                                    <button className={styles.pageNumBtn} onClick={() => setCurrentPage(1)}>1</button>
                                     <span className={styles.pageDots}>…</span>
                                 </>
                             )}
 
-                            {/* Show page numbers around current page */}
                             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                                 let pageNum;
                                 if (totalPages <= 5) {
@@ -1633,16 +2490,10 @@ export default function AdminDashboardPage() {
                                 );
                             })}
 
-                            {/* Always show last page */}
                             {totalPages > 5 && currentPage < totalPages - 2 && (
                                 <>
                                     <span className={styles.pageDots}>…</span>
-                                    <button
-                                        className={styles.pageNumBtn}
-                                        onClick={() => setCurrentPage(totalPages)}
-                                    >
-                                        {totalPages}
-                                    </button>
+                                    <button className={styles.pageNumBtn} onClick={() => setCurrentPage(totalPages)}>{totalPages}</button>
                                 </>
                             )}
                         </div>
@@ -1664,128 +2515,334 @@ export default function AdminDashboardPage() {
         </div>
     ), [paginatedVendors, searchTerm, filterStatus, currentPage, itemsPerPage, totalItems, totalPages, handleEditVendor, handleViewVendor, handleDeleteVendor]);
 
-    // ============================================
-    // RENDER DASHBOARD
-    // ============================================
     const renderDashboard = () => (
         <>
-            <div className={styles.header}>
-                <div className={styles.headerTop}>
-                    <div>
-                        <h2>Admin Dashboard</h2>
-                        <p>Welcome back, Admin!</p>
-                    </div>
-                    <div className={styles.headerRightControls}>
-                        <div className={styles.updatedTime}>
-                            <span className={styles.updatedIcon}>🕐</span>
-                            <span className={styles.updatedText}>Updated: {currentTime || '00:00:00'}</span>
-                        </div>
-                        <div className={styles.profileWrapper} ref={dropdownRef}>
-                            <button 
-                                className={styles.profileBtn} 
-                                onClick={() => setShowDropdown(!showDropdown)}
-                                aria-label="Profile menu"
-                            >
-                                <span className={styles.profileAvatar}>A</span>
-                            </button>
-                            {showDropdown && (
-                                <div className={styles.dropdownMenu}>
-                                    <div className={styles.dropdownHeader}>
-                                        <span className={styles.dropdownAvatar}>A</span>
-                                        <div className={styles.dropdownUserInfo}>
-                                            <p className={styles.dropdownName}>Admin</p>
-                                            <p className={styles.dropdownEmail}>admin@gmail.com</p>
-                                        </div>
-                                    </div>
-                                    <div className={styles.dropdownDivider}></div>
-                                    <button className={styles.dropdownLogout} onClick={handleLogout}>
-                                        <span className={styles.dropdownLogoutIcon}>🚪</span>
-                                        Logout
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
+                <div className={styles.statCard} style={{ cursor: 'pointer' }} onClick={() => setActiveTab('vendors')}>
                     <h3>🏪 Vendors</h3>
                     <p className={styles.statValue}>{totalVendors}</p>
                     <div className={styles.statDetails}>
-                        <span className={styles.statActive}>✅ Active: {activeVendors}</span>
-                        <span className={styles.statPending}>⏳ Pending: {pendingVendors}</span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('vendors', 'all'); }}
+                            title="Click to view all vendors"
+                        >
+                            📊 Total: {totalVendors}
+                        </span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('vendors', 'active'); }}
+                            title="Click to view active vendors"
+                        >
+                            ✅ Active: {activeVendors}
+                        </span>
+                        <span 
+                            className={styles.statPending} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('vendors', 'pending'); }}
+                            title="Click to view pending vendors"
+                        >
+                            ⏳ Pending: {pendingVendors}
+                        </span>
+                        <span 
+                            className={styles.statRejected} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('vendors', 'blocklist'); }}
+                            title="Click to view blocked vendors"
+                        >
+                            🚫 Blocklist: {rejectedVendors}
+                        </span>
                     </div>
                 </div>
-                <div className={styles.statCard}>
+
+                <div className={styles.statCard} style={{ cursor: 'pointer' }} onClick={() => setActiveTab('customers')}>
                     <h3>👥 Customers</h3>
                     <p className={styles.statValue}>{totalCustomers}</p>
                     <div className={styles.statDetails}>
-                        <span className={styles.statActive}>✅ Active: {activeCustomers}</span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('customers', 'all'); }}
+                            title="Click to view all customers"
+                        >
+                            📊 Total: {totalCustomers}
+                        </span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('customers', 'active'); }}
+                            title="Click to view active customers"
+                        >
+                            ✅ Active: {activeCustomers}
+                        </span>
+                        <span 
+                            className={styles.statPending} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('customers', 'pending'); }}
+                            title="Click to view pending customers"
+                        >
+                            ⏳ Pending: {pendingCustomers}
+                        </span>
+                        <span 
+                            className={styles.statRejected} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('customers', 'blocklist'); }}
+                            title="Click to view blocked customers"
+                        >
+                            🚫 Blocklist: {rejectedCustomers}
+                        </span>
                     </div>
                 </div>
-                <div className={styles.statCard}>
+
+                <div className={styles.statCard} style={{ cursor: 'pointer' }} onClick={() => setActiveTab('riders')}>
                     <h3>🛵 Riders</h3>
                     <p className={styles.statValue}>{totalRiders}</p>
                     <div className={styles.statDetails}>
-                        <span className={styles.statActive}>✅ Active: {activeRiders}</span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('riders', 'all'); }}
+                            title="Click to view all riders"
+                        >
+                            📊 Total: {totalRiders}
+                        </span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('riders', 'active'); }}
+                            title="Click to view active riders"
+                        >
+                            ✅ Active: {activeRiders}
+                        </span>
+                        <span 
+                            className={styles.statPending} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('riders', 'pending'); }}
+                            title="Click to view pending riders"
+                        >
+                            ⏳ Pending: {pendingRiders}
+                        </span>
+                        <span 
+                            className={styles.statRejected} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('riders', 'blocklist'); }}
+                            title="Click to view blocked riders"
+                        >
+                            🚫 Blocklist: {rejectedRiders}
+                        </span>
                     </div>
                 </div>
-                <div className={styles.statCard}>
+
+                <div className={styles.statCard} style={{ cursor: 'pointer' }} onClick={() => setActiveTab('employees')}>
                     <h3>👔 Employees</h3>
-                    <p className={styles.statValue}>{adminEmployees.length}</p>
+                    <p className={styles.statValue}>{totalEmployees}</p>
                     <div className={styles.statDetails}>
-                        <span className={styles.statActive}>✅ Total Staff: {adminEmployees.length}</span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('employees', 'all'); }}
+                            title="Click to view all employees"
+                        >
+                            📊 Total: {totalEmployees}
+                        </span>
+                        <span 
+                            className={styles.statActive} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('employees', 'active'); }}
+                            title="Click to view active employees"
+                        >
+                            ✅ Active: {activeEmployees}
+                        </span>
+                        <span 
+                            className={styles.statPending} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('employees', 'pending'); }}
+                            title="Click to view pending employees"
+                        >
+                            ⏳ Pending: {pendingEmployees}
+                        </span>
+                        <span 
+                            className={styles.statRejected} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); handleStatClick('employees', 'blocklist'); }}
+                            title="Click to view blocked employees"
+                        >
+                            🚫 Blocklist: {rejectedEmployees}
+                        </span>
                     </div>
                 </div>
             </div>
 
-            <div className={styles.section}>
-                <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>📢 Recent Announcements</h2>
-                    <button className={styles.primaryBtn} onClick={() => setActiveTab('announcements')}>View All</button>
+            {showFilteredData && dashboardFilter.type && dashboardFilter.status && (
+                <div className={styles.section} style={{ marginBottom: '20px' }}>
+                    <div className={styles.sectionHeader}>
+                        <h2 className={styles.sectionTitle}>
+                            📋 {dashboardFilter.type.charAt(0).toUpperCase() + dashboardFilter.type.slice(1)} 
+                            {' '}- {dashboardFilter.status.charAt(0).toUpperCase() + dashboardFilter.status.slice(1)}
+                            <span style={{ fontSize: '14px', fontWeight: 'normal', color: '#6c757d', marginLeft: '10px' }}>
+                                ({filteredDashboardData.length} records)
+                            </span>
+                        </h2>
+                        <button 
+                            className={styles.secondaryBtn} 
+                            onClick={clearDashboardFilter}
+                            style={{ padding: '6px 16px', fontSize: '13px' }}
+                        >
+                            ✕ Close
+                        </button>
+                    </div>
+                    
+                    {filteredDashboardData.length === 0 ? (
+                        <p style={{ color: '#6c757d', textAlign: 'center', padding: '20px' }}>
+                            No {dashboardFilter.status} {dashboardFilter.type} found.
+                        </p>
+                    ) : (
+                        <div className={styles.tableContainer}>
+                            <table className={styles.table}>
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        {dashboardFilter.type === 'vendors' ? (
+                                            <>
+                                                <th>Vendor ID</th>
+                                                <th>Shop Name</th>
+                                                <th>Owner</th>
+                                                <th>Email</th>
+                                                <th>Phone</th>
+                                                <th>Registration Date</th>
+                                                <th>Status</th>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Status</th>
+                                                <th>Type</th>
+                                            </>
+                                        )}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredDashboardData.slice(0, 20).map((item, index) => (
+                                        <tr key={item.id || index}>
+                                            <td>{index + 1}</td>
+                                            {dashboardFilter.type === 'vendors' ? (
+                                                <>
+                                                    <td><span className={styles.vendorIdBadge}>{item.vendorId || 'N/A'}</span></td>
+                                                    <td>{item.shopName || 'N/A'}</td>
+                                                    <td>{item.ownerName || item.name || 'N/A'}</td>
+                                                    <td>{item.email || 'N/A'}</td>
+                                                    <td>{item.phone || 'N/A'}</td>
+                                                    <td>{item.date || 'N/A'}</td>
+                                                    <td>
+                                                        <span className={`${styles.statusBadge} ${
+                                                            item.status === 'approved' ? styles.statusApproved :
+                                                            item.status === 'pending' ? styles.statusPending :
+                                                            styles.statusRejected
+                                                        }`}>
+                                                            {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : 'N/A'}
+                                                        </span>
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td>{item.name || item.shopName || 'N/A'}</td>
+                                                    <td>{item.email || 'N/A'}</td>
+                                                    <td>
+                                                        <span className={`${styles.statusBadge} ${
+                                                            item.status === 'approved' || item.status === 'active' ? styles.statusApproved :
+                                                            item.status === 'pending' ? styles.statusPending :
+                                                            styles.statusRejected
+                                                        }`}>
+                                                            {(item.status || item.approvalStatus || 'active').charAt(0).toUpperCase() + 
+                                                             (item.status || item.approvalStatus || 'active').slice(1)}
+                                                        </span>
+                                                    </td>
+                                                    <td>{dashboardFilter.type}</td>
+                                                </>
+                                            )}
+                                        </tr>
+                                    ))}
+                                    {filteredDashboardData.length > 20 && (
+                                        <tr>
+                                            <td colSpan={dashboardFilter.type === 'vendors' ? 8 : 5} style={{ textAlign: 'center', padding: '10px', color: '#6c757d' }}>
+                                                Showing first 20 records. View full list in the {dashboardFilter.type} tab.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
+            )}
+
+            <div className={styles.announcementSection}>
+                <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>📢 Announcements</h2>
+                    <button className={styles.primaryBtn} onClick={() => setActiveTab('announcements')}>
+                        View All
+                    </button>
+                </div>
+                
                 {announcements.length === 0 ? (
-                    <p style={{ color: '#6c757d', textAlign: 'center', padding: '20px' }}>
-                        No announcements yet. <button className={styles.primaryBtn} style={{ padding: '5px 15px', fontSize: '12px' }} onClick={() => setActiveTab('announcements')}>Create One</button>
-                    </p>
+                    <div className={styles.announcementEmpty}>
+                        No announcements yet.
+                        <button className={styles.createBtn} onClick={() => setActiveTab('announcements')}>
+                            Create One
+                        </button>
+                    </div>
                 ) : (
-                    <div className={styles.announcementList}>
+                    <div className={styles.announcementListCompact}>
                         {announcements.slice(0, 3).map((an) => (
-                            <div key={an.id} className={styles.announcementItem}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span className={styles.announcementTitle}>{an.title}</span>
-                                    <span className={styles.statusBadge} style={{ backgroundColor: '#e3f2fd', color: '#0d47a1' }}>📢 {an.audience}</span>
+                            <div key={an.id} className={styles.announcementItemCompact}>
+                                <div className={styles.announcementHeader}>
+                                    <span className={styles.announcementTitle} title={an.title}>
+                                        {an.title}
+                                    </span>
+                                    <span className={styles.announcementBadge}>
+                                        📢 {an.audience}
+                                    </span>
                                 </div>
-                                <p className={styles.announcementContent}>{an.content}</p>
-                                <div className={styles.announcementDate}>{an.date}</div>
+                                <p className={styles.announcementContent}>
+                                    {an.content}
+                                </p>
+                                <div className={styles.announcementFooter}>
+                                    <span className={styles.announcementDate}>
+                                        {an.date}
+                                    </span>
+                                    <div className={styles.announcementActions}>
+                                        <button 
+                                            className={styles.deleteBtnSmall}
+                                            onClick={() => handleDeleteAnnouncement(an.id)}
+                                            title="Delete announcement"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
-                        {announcements.length > 3 && (
-                            <button className={styles.secondaryBtn} onClick={() => setActiveTab('announcements')} style={{ marginTop: '10px' }}>
-                                View All {announcements.length} Announcements
-                            </button>
-                        )}
                     </div>
                 )}
-            </div>
-
-            <div className={styles.section} style={{ marginBottom: '0' }}>
-                <h2 className={styles.sectionTitle}>⚡ Quick Actions</h2>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <button className={styles.primaryBtn} onClick={() => setActiveTab('vendors')}>Manage Vendors</button>
-                    <button className={styles.primaryBtn} onClick={() => setActiveTab('announcements')}>Send Announcement</button>
-                    <button className={styles.primaryBtn} onClick={() => setActiveTab('withdrawals')}>View Withdrawals</button>
-                    <button className={styles.primaryBtn} onClick={() => setActiveTab('subscriptions')}>📋 View Subscriptions</button>
-                </div>
+                
+                {announcements.length > 3 && (
+                    <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                        <button 
+                            className={styles.secondaryBtn} 
+                            onClick={() => setActiveTab('announcements')}
+                            style={{ padding: '6px 20px', fontSize: '13px' }}
+                        >
+                            View All {announcements.length} Announcements →
+                        </button>
+                    </div>
+                )}
             </div>
         </>
     );
 
-    // ============================================
-    // OTHER RENDER FUNCTIONS
-    // ============================================
     const renderWithdrawalRequests = () => (
         <div className={styles.section}>
             <h2 className={styles.sectionTitle}>💳 Withdrawal Requests</h2>
@@ -1825,44 +2882,281 @@ export default function AdminDashboardPage() {
         </div>
     );
 
-    const renderSubscriptionRequests = () => (
-        <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>📋 Subscription Upgrade Requests</h2>
-            <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                    <thead><tr><th>Vendor</th><th>Shop</th><th>Plan</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody>
-                        {subscriptionRequests.length === 0 ? (
-                            <tr><td colSpan={7} style={{ textAlign: 'center', padding: '20px', color: '#6c757d' }}>No subscription requests found.</td></tr>
-                        ) : (
-                            subscriptionRequests.map((s) => (
-                                <tr key={s.id}>
-                                    <td>{s.vendorName}</td>
-                                    <td>{s.shopName}</td>
-                                    <td><span className={styles.statusBadge} style={{ backgroundColor: '#e3f2fd', color: '#0d47a1' }}>{s.planType.charAt(0).toUpperCase() + s.planType.slice(1)}</span></td>
-                                    <td><strong>PKR {s.amount.toLocaleString()}</strong></td>
-                                    <td>{s.requestedAt}</td>
-                                    <td>
-                                        <span className={`${styles.statusBadge} ${s.status === 'approved' ? styles.statusApproved : s.status === 'rejected' ? styles.statusRejected : styles.statusPending}`}>
-                                            {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {s.status === 'pending' && (
-                                            <>
-                                                <button className={styles.successBtn} onClick={() => handleSubscriptionStatus(s.id, 'approved')} style={{ marginRight: '5px' }}>Approve</button>
-                                                <button className={styles.dangerBtn} onClick={() => handleSubscriptionStatus(s.id, 'rejected')}>Reject</button>
-                                            </>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))
+    // ✅ ONLY Business Subscription Requests (Global subscriptions removed from UI)
+    const renderSubscriptionRequests = () => {
+        const pendingRequests = subscriptionRequests.filter((s: any) => s.status === 'pending');
+        const approvedRequests = subscriptionRequests.filter((s: any) => s.status === 'approved');
+        const rejectedRequests = subscriptionRequests.filter((s: any) => s.status === 'rejected');
+
+        console.log('📋 [ADMIN] Rendering subscription requests:', {
+            total: subscriptionRequests.length,
+            pending: pendingRequests.length,
+            approved: approvedRequests.length,
+            rejected: rejectedRequests.length
+        });
+
+        return (
+            <div className={styles.subscriptionSection}>
+                <div className={styles.subscriptionHeader}>
+                    <div className={styles.subscriptionHeaderLeft}>
+                        <h2 className={styles.subscriptionTitle}>📋 Business Subscription Requests</h2>
+                        <span className={styles.subscriptionBadge}>
+                            Total: {subscriptionRequests.length}
+                        </span>
+                    </div>
+                    <button 
+                        className={styles.subscriptionRefreshBtn}
+                        onClick={fetchSubscriptions}
+                    >
+                        🔄 Refresh
+                    </button>
+                </div>
+
+                {subscriptionRequests.length === 0 ? (
+                    <div className={styles.subscriptionEmptyState}>
+                        <span className={styles.emptyIcon}>📋</span>
+                        <h4 className={styles.emptyTitle}>No Business Subscription Requests</h4>
+                        <p className={styles.emptySubtitle}>All business subscription requests will appear here once vendors submit them.</p>
+                    </div>
+                ) : (
+                    <>
+                        {/* Pending Requests */}
+                        {pendingRequests.length > 0 && (
+                            <>
+                                <div className={styles.subscriptionTypeHeader}>
+                                    <span className={styles.subscriptionTypeIcon}>⏳</span>
+                                    <h3 className={styles.subscriptionTypeTitle}>Pending Requests</h3>
+                                    <span className={styles.subscriptionTypeCount}>{pendingRequests.length}</span>
+                                </div>
+
+                                <div className={styles.subscriptionCardGrid}>
+                                    {pendingRequests.map((s: any) => (
+                                        <div key={s.id} className={styles.subscriptionCard}>
+                                            <div className={styles.subscriptionCardStatus}>
+                                                <span className={`${styles.subscriptionStatusBadge} ${styles.subscriptionStatusPending}`}>
+                                                    ⏳ Pending
+                                                </span>
+                                                <span className={styles.subscriptionPlanBadge}>
+                                                    {s.plan === 'yearly' || s.planType === 'yearly' ? '📅 Yearly' : '📆 Monthly'}
+                                                </span>
+                                            </div>
+
+                                            <div className={styles.subscriptionCardBody}>
+                                                <div className={styles.subscriptionBusinessInfo}>
+                                                    <span className={styles.subscriptionBusinessIcon}>🏢</span>
+                                                    <div>
+                                                        <h4 className={styles.subscriptionBusinessName}>{s.businessName || 'N/A'}</h4>
+                                                        <p className={styles.subscriptionBusinessEmail}>{s.businessEmail || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionVendorInfo}>
+                                                    <span className={styles.subscriptionVendorIcon}>👤</span>
+                                                    <div>
+                                                        <p className={styles.subscriptionVendorName}>{s.vendorName || 'N/A'}</p>
+                                                        <p className={styles.subscriptionVendorEmail}>{s.vendorEmail || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionDetailsGrid}>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>💰 Amount</span>
+                                                        <span className={styles.subscriptionDetailValue}>PKR {s.amount ? Number(s.amount).toLocaleString() : '0'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>💳 Payment Method</span>
+                                                        <span className={styles.subscriptionDetailValue}>{s.paymentMethod || 'N/A'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>📅 Requested</span>
+                                                        <span className={styles.subscriptionDetailValue}>{s.createdAt || s.requestedAt || 'N/A'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>📱 Account</span>
+                                                        <span className={styles.subscriptionDetailValue}>
+                                                            {s.accountNumber ? s.accountNumber : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionCardActions}>
+                                                    <button 
+                                                        className={styles.subscriptionApproveBtn}
+                                                        onClick={() => handleBusinessSubscriptionStatus(s.id, 'approved')}
+                                                    >
+                                                        ✅ Approve
+                                                    </button>
+                                                    <button 
+                                                        className={styles.subscriptionRejectBtn}
+                                                        onClick={() => handleBusinessSubscriptionStatus(s.id, 'rejected')}
+                                                    >
+                                                        ❌ Reject
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
-                    </tbody>
-                </table>
+
+                        {/* Approved Requests */}
+                        {approvedRequests.length > 0 && (
+                            <>
+                                <div className={styles.subscriptionTypeHeader} style={{ borderLeftColor: '#28a745' }}>
+                                    <span className={styles.subscriptionTypeIcon}>✅</span>
+                                    <h3 className={styles.subscriptionTypeTitle}>Approved Requests</h3>
+                                    <span className={styles.subscriptionTypeCount} style={{ background: '#28a745' }}>{approvedRequests.length}</span>
+                                </div>
+
+                                <div className={styles.subscriptionCardGrid}>
+                                    {approvedRequests.map((s: any) => (
+                                        <div key={s.id} className={styles.subscriptionCard} style={{ borderColor: '#28a745', background: '#f0fff4' }}>
+                                            <div className={styles.subscriptionCardStatus}>
+                                                <span className={`${styles.subscriptionStatusBadge} ${styles.subscriptionStatusApproved}`}>
+                                                    ✅ Approved
+                                                </span>
+                                                <span className={styles.subscriptionPlanBadge}>
+                                                    {s.plan === 'yearly' || s.planType === 'yearly' ? '📅 Yearly' : '📆 Monthly'}
+                                                </span>
+                                            </div>
+
+                                            <div className={styles.subscriptionCardBody}>
+                                                <div className={styles.subscriptionBusinessInfo}>
+                                                    <span className={styles.subscriptionBusinessIcon}>🏢</span>
+                                                    <div>
+                                                        <h4 className={styles.subscriptionBusinessName}>{s.businessName || 'N/A'}</h4>
+                                                        <p className={styles.subscriptionBusinessEmail}>{s.businessEmail || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionVendorInfo}>
+                                                    <span className={styles.subscriptionVendorIcon}>👤</span>
+                                                    <div>
+                                                        <p className={styles.subscriptionVendorName}>{s.vendorName || 'N/A'}</p>
+                                                        <p className={styles.subscriptionVendorEmail}>{s.vendorEmail || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionDetailsGrid}>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>💰 Amount</span>
+                                                        <span className={styles.subscriptionDetailValue}>PKR {s.amount ? Number(s.amount).toLocaleString() : '0'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>💳 Payment Method</span>
+                                                        <span className={styles.subscriptionDetailValue}>{s.paymentMethod || 'N/A'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>📅 Requested</span>
+                                                        <span className={styles.subscriptionDetailValue}>{s.createdAt || s.requestedAt || 'N/A'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>📱 Account</span>
+                                                        <span className={styles.subscriptionDetailValue}>
+                                                            {s.accountNumber ? s.accountNumber : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ 
+                                                    padding: '8px 12px', 
+                                                    background: '#d4edda', 
+                                                    borderRadius: '8px',
+                                                    textAlign: 'center',
+                                                    fontSize: '13px',
+                                                    color: '#155724'
+                                                }}>
+                                                    ✅ Approved on {s.approvedAt || s.createdAt || 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* Rejected Requests */}
+                        {rejectedRequests.length > 0 && (
+                            <>
+                                <div className={styles.subscriptionTypeHeader} style={{ borderLeftColor: '#dc3545' }}>
+                                    <span className={styles.subscriptionTypeIcon}>❌</span>
+                                    <h3 className={styles.subscriptionTypeTitle}>Rejected Requests</h3>
+                                    <span className={styles.subscriptionTypeCount} style={{ background: '#dc3545' }}>{rejectedRequests.length}</span>
+                                </div>
+
+                                <div className={styles.subscriptionCardGrid}>
+                                    {rejectedRequests.map((s: any) => (
+                                        <div key={s.id} className={styles.subscriptionCard} style={{ borderColor: '#dc3545', background: '#fff5f5' }}>
+                                            <div className={styles.subscriptionCardStatus}>
+                                                <span className={`${styles.subscriptionStatusBadge} ${styles.subscriptionStatusRejected}`}>
+                                                    ❌ Rejected
+                                                </span>
+                                                <span className={styles.subscriptionPlanBadge}>
+                                                    {s.plan === 'yearly' || s.planType === 'yearly' ? '📅 Yearly' : '📆 Monthly'}
+                                                </span>
+                                            </div>
+
+                                            <div className={styles.subscriptionCardBody}>
+                                                <div className={styles.subscriptionBusinessInfo}>
+                                                    <span className={styles.subscriptionBusinessIcon}>🏢</span>
+                                                    <div>
+                                                        <h4 className={styles.subscriptionBusinessName}>{s.businessName || 'N/A'}</h4>
+                                                        <p className={styles.subscriptionBusinessEmail}>{s.businessEmail || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionVendorInfo}>
+                                                    <span className={styles.subscriptionVendorIcon}>👤</span>
+                                                    <div>
+                                                        <p className={styles.subscriptionVendorName}>{s.vendorName || 'N/A'}</p>
+                                                        <p className={styles.subscriptionVendorEmail}>{s.vendorEmail || 'N/A'}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.subscriptionDetailsGrid}>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>💰 Amount</span>
+                                                        <span className={styles.subscriptionDetailValue}>PKR {s.amount ? Number(s.amount).toLocaleString() : '0'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>💳 Payment Method</span>
+                                                        <span className={styles.subscriptionDetailValue}>{s.paymentMethod || 'N/A'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>📅 Requested</span>
+                                                        <span className={styles.subscriptionDetailValue}>{s.createdAt || s.requestedAt || 'N/A'}</span>
+                                                    </div>
+                                                    <div className={styles.subscriptionDetailItem}>
+                                                        <span className={styles.subscriptionDetailLabel}>📱 Account</span>
+                                                        <span className={styles.subscriptionDetailValue}>
+                                                            {s.accountNumber ? s.accountNumber : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ 
+                                                    padding: '8px 12px', 
+                                                    background: '#f8d7da', 
+                                                    borderRadius: '8px',
+                                                    textAlign: 'center',
+                                                    fontSize: '13px',
+                                                    color: '#721c24'
+                                                }}>
+                                                    ❌ Rejected on {s.approvedAt || s.createdAt || 'N/A'}
+                                                    {s.rejectedReason && <div style={{ fontSize: '12px', marginTop: '4px' }}>Reason: {s.rejectedReason}</div>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </>
+                )}
             </div>
-        </div>
-    );
+        );
+    };
 
     const renderAdminEmployees = () => (
         <div className={styles.section}>
@@ -1974,9 +3268,6 @@ export default function AdminDashboardPage() {
         </div>
     );
 
-    // ============================================
-    // MODALS FOR ADD
-    // ============================================
     const renderAddEmployeeModal = () => {
         if (!showAddEmployee) return null;
         return (
@@ -2047,9 +3338,22 @@ export default function AdminDashboardPage() {
         );
     };
 
-    // ============================================
-    // MAIN RENDER
-    // ============================================
+    const getTabTitle = () => {
+        switch(activeTab) {
+            case 'dashboard': return 'Admin Dashboard';
+            case 'vendors': return '🏪 Vendor Management';
+            case 'customers': return '👥 Customers';
+            case 'riders': return '🛵 Riders';
+            case 'employees': return '👔 Employees';
+            case 'commission': return '💰 Commission Rules';
+            case 'coupons': return '🎟️ Coupons';
+            case 'announcements': return '📢 Announcements';
+            case 'withdrawals': return '💳 Withdrawals';
+            case 'subscriptions': return '📋 Business Subscriptions';
+            default: return 'Admin Dashboard';
+        }
+    };
+
     if (loading) {
         return <div className={styles.loading}>Loading...</div>;
     }
@@ -2073,6 +3377,49 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className={styles.main}>
+                <div className={styles.header}>
+                    <div className={styles.headerTop}>
+                        <div>
+                            <h2>{getTabTitle()}</h2>
+                            <p>Welcome back, Admin!</p>
+                        </div>
+                        <div className={styles.headerRightControls}>
+                            <button className={styles.addVendorBtn} onClick={() => setShowAddVendorModal(true)}>
+                                ➕ Add Vendor
+                            </button>
+                            <div className={styles.updatedTime}>
+                                <span className={styles.updatedIcon}>🕐</span>
+                                <span className={styles.updatedText}>Updated: {currentTime || '00:00:00'}</span>
+                            </div>
+                            <div className={styles.profileWrapper} ref={dropdownRef}>
+                                <button 
+                                    className={styles.profileBtn} 
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                    aria-label="Profile menu"
+                                >
+                                    <span className={styles.profileAvatar}>A</span>
+                                </button>
+                                {showDropdown && (
+                                    <div className={styles.dropdownMenu}>
+                                        <div className={styles.dropdownHeader}>
+                                            <span className={styles.dropdownAvatar}>A</span>
+                                            <div className={styles.dropdownUserInfo}>
+                                                <p className={styles.dropdownName}>Admin</p>
+                                                <p className={styles.dropdownEmail}>admin@gmail.com</p>
+                                            </div>
+                                        </div>
+                                        <div className={styles.dropdownDivider}></div>
+                                        <button className={styles.dropdownLogout} onClick={handleLogout}>
+                                            <span className={styles.dropdownLogoutIcon}>🚪</span>
+                                            Logout
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {activeTab === 'dashboard' && renderDashboard()}
                 {activeTab === 'vendors' && renderVendors()}
                 {activeTab === 'customers' && renderCustomers()}

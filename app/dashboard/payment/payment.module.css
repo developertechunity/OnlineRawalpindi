@@ -1,0 +1,633 @@
+/* app/payment/payment.module.css */
+
+/* ============================================
+   CONTAINER
+   ============================================ */
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    min-height: 100vh;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.header {
+    background: white;
+    padding: 25px 30px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.header h1 {
+    font-size: 28px;
+    color: #1a1a2e;
+    margin: 0;
+}
+
+.header p {
+    color: #6c757d;
+    margin: 0;
+    font-size: 16px;
+}
+
+.roleBadge {
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: #4a6cf7;
+    color: white;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    background: white;
+    padding: 10px 15px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.tab {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.tab:hover {
+    background: #f0f2f5;
+    color: #1a1a2e;
+}
+
+.tabActive {
+    background: #4a6cf7;
+    color: white;
+}
+
+.tabActive:hover {
+    background: #3a5bd9;
+    color: white;
+}
+
+/* ============================================
+   CONTENT
+   ============================================ */
+.content {
+    margin-top: 10px;
+}
+
+/* ============================================
+   SECTION
+   ============================================ */
+.section {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 25px;
+}
+
+.sectionTitle {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 25px 0;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f2f5;
+}
+
+/* ============================================
+   FORM
+   ============================================ */
+.formGroup {
+    margin-bottom: 18px;
+}
+
+.formLabel {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.formInput {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+    background: white;
+    box-sizing: border-box;
+}
+
+.formInput:focus {
+    border-color: #4a6cf7;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.1);
+}
+
+.formInput::placeholder {
+    color: #999;
+}
+
+/* ============================================
+   METHOD GRID
+   ============================================ */
+.methodGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.methodCard {
+    padding: 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.methodCard:hover {
+    border-color: #4a6cf7;
+    transform: translateY(-2px);
+}
+
+.methodActive {
+    border-color: #4a6cf7;
+    background: #f0f4ff;
+}
+
+.methodIcon {
+    display: block;
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.methodName {
+    display: block;
+    font-weight: 600;
+    color: #1a1a2e;
+    font-size: 16px;
+}
+
+.methodDesc {
+    display: block;
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.primaryBtn {
+    width: 100%;
+    padding: 14px;
+    background: #4a6cf7;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.primaryBtn:hover:not(:disabled) {
+    background: #3a5bd9;
+}
+
+.primaryBtn:disabled {
+    background: #a0a0b8;
+    cursor: not-allowed;
+}
+
+.successBtn {
+    width: 100%;
+    padding: 12px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.successBtn:hover:not(:disabled) {
+    background: #218838;
+}
+
+.successBtn:disabled {
+    background: #a0a0b8;
+    cursor: not-allowed;
+}
+
+.dangerBtn {
+    padding: 6px 14px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.dangerBtn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.dangerBtn:disabled {
+    background: #a0a0b8;
+    cursor: not-allowed;
+}
+
+.warningBtn {
+    width: 100%;
+    padding: 12px;
+    background: #ffc107;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.warningBtn:hover:not(:disabled) {
+    background: #e0a800;
+}
+
+.warningBtn:disabled {
+    background: #a0a0b8;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   COD GRID
+   ============================================ */
+.codGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.codCard {
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+}
+
+.codCard h3 {
+    margin: 0 0 15px 0;
+    color: #1a1a2e;
+}
+
+/* ============================================
+   SUBSCRIPTION
+   ============================================ */
+.subscriptionGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+}
+
+.planCard {
+    padding: 30px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.planCard:hover {
+    border-color: #4a6cf7;
+    transform: translateY(-3px);
+}
+
+.planActive {
+    border-color: #4a6cf7;
+    background: #f0f4ff;
+}
+
+.planName {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 5px 0;
+}
+
+.planPrice {
+    font-size: 28px;
+    font-weight: 700;
+    color: #4a6cf7;
+    margin: 10px 0;
+}
+
+.planPrice span {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 400;
+}
+
+.planFeatures {
+    list-style: none;
+    padding: 0;
+    margin: 15px 0 20px 0;
+}
+
+.planFeatures li {
+    padding: 5px 0;
+    color: #555;
+    font-size: 14px;
+}
+
+.planCard .primaryBtn {
+    width: auto;
+    padding: 12px 30px;
+}
+
+/* ============================================
+   TABLE
+   ============================================ */
+.tableContainer {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.table th {
+    text-align: left;
+    padding: 12px 15px;
+    border-bottom: 2px solid #e0e0e0;
+    font-weight: 600;
+    color: #333;
+    background: #f8f9fa;
+}
+
+.table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #555;
+}
+
+.table tr:hover {
+    background: #f8f9fa;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+.statusBadge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    display: inline-block;
+    font-weight: 500;
+}
+
+.statusSuccess {
+    background: #d4edda;
+    color: #155724;
+}
+
+.statusPending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.statusFailed {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.statusRefunded {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+/* ============================================
+   STATS
+   ============================================ */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.statCard {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.statCard h3 {
+    font-size: 14px;
+    color: #6c757d;
+    margin: 0 0 5px 0;
+}
+
+.statValue {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0;
+}
+
+/* ============================================
+   METHOD STATS
+   ============================================ */
+.methodStats h3 {
+    font-size: 16px;
+    color: #1a1a2e;
+    margin-bottom: 15px;
+}
+
+.methodBars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.methodBar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.methodLabel {
+    width: 80px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.barContainer {
+    flex: 1;
+    height: 12px;
+    background: #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.5s ease;
+}
+
+.methodCount {
+    font-size: 12px;
+    color: #6c757d;
+    width: 120px;
+    text-align: right;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.emptyState {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+    font-size: 16px;
+}
+
+/* ============================================
+   LOADING
+   ============================================ */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-size: 18px;
+    color: #6c757d;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+    .methodGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .codGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .subscriptionGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .tabs {
+        justify-content: center;
+    }
+
+    .tab {
+        font-size: 12px;
+        padding: 8px 14px;
+    }
+
+    .methodBar {
+        flex-wrap: wrap;
+    }
+
+    .methodLabel {
+        width: 60px;
+        font-size: 12px;
+    }
+
+    .methodCount {
+        width: auto;
+        font-size: 11px;
+    }
+
+    .section {
+        padding: 20px;
+    }
+
+    .table {
+        font-size: 12px;
+    }
+
+    .table th,
+    .table td {
+        padding: 8px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .statsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    .header h1 {
+        font-size: 22px;
+    }
+
+    .sectionTitle {
+        font-size: 18px;
+    }
+
+    .planPrice {
+        font-size: 22px;
+    }
+
+    .tab {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    .methodCard {
+        padding: 15px;
+    }
+}

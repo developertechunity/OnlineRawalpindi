@@ -10,7 +10,7 @@ import {
     getPayments,
     getPaymentDetails,
     getPaymentStatistics,
-    handleStripeWebhook,
+    vendorSubscription,
     handleEasyPaisaWebhook,
     handleJazzCashWebhook
 } from './payment.controller.js';
@@ -18,7 +18,7 @@ import {
 const router = express.Router();
 
 // ============================================
-// ✅ TEST ROUTE - To check if payment routes are working
+// ✅ TEST ROUTE
 // ============================================
 router.get('/test', (req, res) => {
     res.json({
@@ -31,7 +31,6 @@ router.get('/test', (req, res) => {
 // ============================================
 // PUBLIC WEBHOOK ROUTES
 // ============================================
-router.post('/webhook/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
 router.post('/webhook/easypaisa', express.json(), handleEasyPaisaWebhook);
 router.post('/webhook/jazzcash', express.json(), handleJazzCashWebhook);
 
@@ -47,13 +46,18 @@ router.post('/confirm-cod', protect, restrictTo('rider'), confirmCOD);
 router.post('/deposit-cod', protect, restrictTo('rider', 'admin'), depositCODToAdmin);
 
 // ============================================
+// VENDOR ROUTES
+// ============================================
+router.post('/subscription', protect, restrictTo('vendor'), vendorSubscription);
+
+// ============================================
 // ADMIN ROUTES
 // ============================================
 router.post('/refund/:paymentId', protect, restrictTo('admin'), processRefund);
 router.get('/statistics', protect, restrictTo('admin'), getPaymentStatistics);
 
 // ============================================
-// ALL ROLES ROUTES (Customer, Vendor, Rider, Admin)
+// ALL ROLES ROUTES
 // ============================================
 router.get('/history', protect, getPayments);
 router.get('/details/:paymentId', protect, getPaymentDetails);

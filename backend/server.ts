@@ -7,7 +7,7 @@ import authRoutes from './src/modules/auth/auth.routes.js';
 import adminRoutes from './src/modules/admin/admin.routes.js';
 import riderRoutes from './src/modules/rider/rider.routes.js';
 import vendorRoutes from './src/modules/vendor/vendor.routes.js';
-import paymentRoutes from './src/modules/payment/payment.routes.js';  // ✅ Added
+import paymentRoutes from './src/modules/payment/payment.routes.js';
 
 dotenv.config();
 
@@ -28,24 +28,29 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ============================================
-// ✅ ROUTES
+// ✅ ROUTES - MERGED
 // ============================================
 console.log('📂 Mounting routes...');
 
+// Auth routes
 app.use('/api/auth', authRoutes);
 console.log('✅ Auth routes mounted on /api/auth');
 
+// Admin routes
 app.use('/api/auth', adminRoutes);
 console.log('✅ Admin routes mounted on /api/auth');
 
+// Rider routes
 app.use('/api/auth', riderRoutes);
 console.log('✅ Rider routes mounted on /api/auth');
 
-// ✅ FIX: Vendor routes ko /api/auth/vendor pe mount karo
+// ✅ Vendor routes - /api/vendor pe mount karo (Admin aur Aapka dono)
 app.use('/api/auth/vendor', vendorRoutes);
-console.log('✅ Vendor routes mounted on /api/auth/vendor');
+console.log('✅ Vendor routes mounted on /api/vendor');
 
-app.use('/api/payment', paymentRoutes);  // ✅ Added payment routes
+// ✅ Payment routes
+app.use('/api/payment', paymentRoutes);
+console.log('✅ Payment routes mounted on /api/payment');
 
 // ✅ Test routes
 app.get('/api/test', (req, res) => {
@@ -67,10 +72,12 @@ console.log('   - POST /api/auth/login');
 console.log('   - GET  /api/auth/vendors (Admin)');
 console.log('   - GET  /api/auth/withdrawals (Admin)');
 console.log('   - GET  /api/auth/subscriptions (Admin)');
-console.log('   - GET  /api/auth/vendor/test (Vendor Test)');
-console.log('   - GET  /api/auth/vendor/dashboard-summary (Vendor)');
-console.log('   - GET  /api/auth/vendor/products (Vendor)');
-console.log(`💳 Payment: /api/payment`);  // ✅ Added
+console.log('   - GET  /api/vendor/test (Vendor Test)');
+console.log('   - GET  /api/vendor/dashboard-summary (Vendor)');
+console.log('   - GET  /api/vendor/products (Vendor)');
+console.log('   - GET  /api/vendor/business/types (Vendor Business)');
+console.log('   - POST /api/vendor/business/register (Vendor Business)');
+console.log(`💳 Payment: /api/payment`);
 
 mongoose.connect(process.env.MONGO_URI!)
     .then(() => console.log('✅ MongoDB connected'))
