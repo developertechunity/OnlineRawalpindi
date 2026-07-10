@@ -17,16 +17,26 @@ import {
     startFreeTrial,
     cancelSubscriptionRequest,
     requestWithdrawal,
+<<<<<<< HEAD
     getWithdrawalHistory,
+=======
+    requestSubscription,
+    getWithdrawalHistory,
+    // Business Registration Functions
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     getBusinessTypes,
     getSubtypesByType,
     registerBusiness,
     getVendorBusinesses,
+<<<<<<< HEAD
     switchDefaultBusiness,
     getSubscriptionStatus,
     requestBusinessSubscription,
     getBusinessSubscriptionStatus,
     getBusinessSubscriptionHistory
+=======
+    switchDefaultBusiness
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 } from './vendor.controller.js';
 
 const router = express.Router();
@@ -49,6 +59,7 @@ router.get('/dashboard-summary', protect, getVendorDashboardData);
 router.get('/trial-status', protect, getTrialStatus);
 
 // =========================================================
+<<<<<<< HEAD
 // ✅ SUBSCRIPTION STATUS
 // =========================================================
 router.get('/subscription/status', protect, getSubscriptionStatus);
@@ -90,6 +101,37 @@ router.get('/withdrawal/history', protect, getWithdrawalHistory);
 // router.post('/subscription/request', protect, requestSubscription);
 
 // =========================================================
+=======
+// PRODUCTS
+// =========================================================
+router.get('/products', protect, getProducts);
+router.post('/products/add', protect, upload.array('images', 5), addProduct);
+router.delete('/products/:productId', protect, deleteProduct);
+
+// =========================================================
+// EMPLOYEES
+// =========================================================
+router.get('/employees', protect, getEmployees);
+router.post('/employees/add', protect, addEmployee);
+router.delete('/employees/:employeeId', protect, deleteEmployee);
+
+// =========================================================
+// WITHDRAWAL
+// =========================================================
+router.post('/withdrawal/request', protect, requestWithdrawal);
+router.get('/withdrawal/history', protect, getWithdrawalHistory);
+
+// =========================================================
+// SUBSCRIPTION
+// =========================================================
+router.post('/subscription/start-trial', protect, startFreeTrial);
+router.post('/subscription/upgrade', protect, upgradeSubscriptionRequest);
+router.post('/subscription/cancel-request', protect, cancelSubscriptionRequest);
+router.post('/subscription/extend-trial', protect, requestTrialExtension);
+router.post('/subscription/request', protect, requestSubscription);
+
+// =========================================================
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 // BUSINESS REGISTRATION ROUTES
 // =========================================================
 router.get('/business/types', protect, getBusinessTypes);

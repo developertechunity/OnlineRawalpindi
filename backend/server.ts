@@ -40,6 +40,7 @@ console.log('✅ Auth routes mounted on /api/auth');
 app.use('/api/auth', adminRoutes);
 console.log('✅ Admin routes mounted on /api/auth');
 
+<<<<<<< HEAD
 // ✅ DEBUGGING - Admin routes list
 console.log('📋 ADMIN ROUTES REGISTERED:');
 try {
@@ -53,13 +54,25 @@ try {
     console.log('   (Could not list routes)');
 }
 
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 // Rider routes
 app.use('/api/auth', riderRoutes);
 console.log('✅ Rider routes mounted on /api/auth');
 
+<<<<<<< HEAD
 // ✅ Vendor routes
 app.use('/api/auth/vendor', vendorRoutes);
 console.log('✅ Vendor routes mounted on /api/auth/vendor');
+=======
+// ✅ Vendor routes - /api/vendor pe mount karo (Admin aur Aapka dono)
+app.use('/api/vendor', vendorRoutes);
+console.log('✅ Vendor routes mounted on /api/vendor');
+
+// ✅ Payment routes
+app.use('/api/payment', paymentRoutes);
+console.log('✅ Payment routes mounted on /api/payment');
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 
 // ✅ Payment routes
 app.use('/api/payment', paymentRoutes);
@@ -94,10 +107,13 @@ console.log('   - POST /api/auth/login');
 console.log('   - GET  /api/auth/vendors (Admin)');
 console.log('   - GET  /api/auth/withdrawals (Admin)');
 console.log('   - GET  /api/auth/subscriptions (Admin)');
+<<<<<<< HEAD
 console.log('   - PUT  /api/auth/vendor/:id (Admin - Edit Profile) ✅');
 console.log('   - GET  /api/auth/vendor/:id (Admin - Get Vendor) ✅');
 console.log('   - GET  /api/auth/riders (Admin)');
 console.log('   - GET  /api/auth/customers (Admin)');
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 console.log('   - GET  /api/vendor/test (Vendor Test)');
 console.log('   - GET  /api/vendor/dashboard-summary (Vendor)');
 console.log('   - GET  /api/vendor/products (Vendor)');

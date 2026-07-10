@@ -33,10 +33,13 @@ const SubscriptionRequestSchema: Schema = new Schema({
         ref: 'User',
         required: true
     },
+<<<<<<< HEAD
     businessId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Business'
     },
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     vendorName: { 
         type: String, 
         required: true 
@@ -49,9 +52,12 @@ const SubscriptionRequestSchema: Schema = new Schema({
         type: String, 
         required: true 
     },
+<<<<<<< HEAD
     businessName: {
         type: String
     },
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     planType: {
         type: String,
         enum: ['monthly', 'yearly'], // ✅ Only monthly/yearly
@@ -63,7 +69,11 @@ const SubscriptionRequestSchema: Schema = new Schema({
     },
     paymentMethod: {
         type: String,
+<<<<<<< HEAD
         enum: ['easypaisa', 'jazzcash', 'bank'], // ✅ No free_trial
+=======
+        enum: ['easypaisa', 'jazzcash', 'bank'],
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         required: true
     },
     accountNumber: {
@@ -110,7 +120,10 @@ const SubscriptionRequestSchema: Schema = new Schema({
 });
 
 SubscriptionRequestSchema.index({ vendorId: 1, status: 1 });
+<<<<<<< HEAD
 SubscriptionRequestSchema.index({ businessId: 1, status: 1 });
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 SubscriptionRequestSchema.index({ requestedAt: -1 });
 
 export default mongoose.model<ISubscriptionRequest>('SubscriptionRequest', SubscriptionRequestSchema);

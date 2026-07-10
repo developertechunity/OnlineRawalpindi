@@ -11,7 +11,11 @@ import BusinessSubtype from './BusinessSubtype.model.js';
 import Business from './Business.model.js';
 
 // ============================================
+<<<<<<< HEAD
 // 1. DASHBOARD DATA
+=======
+// 1. DASHBOARD DATA (UPDATED WITH BUSINESSES)
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 // ============================================
 export const getVendorDashboardData = async (req: any, res: Response): Promise<any> => {
     try {
@@ -29,15 +33,27 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             return res.status(404).json({ success: false, message: 'Vendor not found' });
         }
 
+<<<<<<< HEAD
+=======
+        // Get businesses for this vendor
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         const businesses = await Business.find({ vendorId })
             .populate('businessTypeId', 'name')
             .sort({ isDefault: -1, createdAt: -1 });
 
+<<<<<<< HEAD
         console.log(`📋 [VENDOR] Found ${businesses.length} businesses for vendor ${vendorId}`);
 
         const defaultBusiness = businesses.find(b => b.isDefault);
         const selectedBusinessId = defaultBusiness?._id || (businesses[0]?._id || '');
 
+=======
+        // Get selected/default business
+        const defaultBusiness = businesses.find(b => b.isDefault);
+        const selectedBusinessId = defaultBusiness?._id || (businesses[0]?._id || '');
+
+        // If no business exists, return empty data
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         if (businesses.length === 0) {
             return res.status(200).json({
                 success: true,
@@ -57,15 +73,23 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
                         status: vendor.subscriptionStatus || 'active',
                         daysRemaining: 0,
                         showTrialWarning: false,
+<<<<<<< HEAD
                         hasRequestedExtension: vendor.hasRequestedExtension || false,
                         isApproved: false,
                         isPendingApproval: false,
                         endDate: null
+=======
+                        hasRequestedExtension: vendor.hasRequestedExtension || false
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
                     }
                 }
             });
         }
 
+<<<<<<< HEAD
+=======
+        // Get products and employees for the selected/default business
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         const [productsCount, productsList, employeesList] = await Promise.all([
             Product.countDocuments({ vendorId }),
             Product.find({ vendorId }).select('_id productName price stockQuantity description status colors sizes images'),
@@ -118,6 +142,7 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             businessEmail: b.businessEmail,
             phone: b.phone,
             addressCity: b.addressCity,
+<<<<<<< HEAD
             addressCountry: b.addressCountry,
             subscriptionPlan: b.subscriptionPlan,
             subscriptionStatus: b.subscriptionStatus
@@ -127,6 +152,11 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
         const isApproved = vendor.subscriptionStatus === 'active' && vendor.subscriptionPlan !== 'free';
         const isPendingApproval = vendor.subscriptionStatus === 'pending_approval';
 
+=======
+            addressCountry: b.addressCountry
+        }));
+
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         return res.status(200).json({
             success: true,
             data: {
@@ -140,7 +170,10 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
                 employeesList: formattedEmployees,
                 businesses: formattedBusinesses,
                 selectedBusinessId: selectedBusinessId,
+<<<<<<< HEAD
                 hasApprovedBusiness: hasApprovedBusiness,
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
                 subscription: {
                     plan: vendor.subscriptionPlan || 'free',
                     status: vendor.subscriptionStatus || 'active',
@@ -455,6 +488,8 @@ export const deleteEmployee = async (req: any, res: Response): Promise<any> => {
 
 // ============================================
 // BUSINESS REGISTRATION - GET BUSINESS TYPES
+<<<<<<< HEAD
+=======
 // ============================================
 export const getBusinessTypes = async (req: any, res: Response): Promise<any> => {
     try {
@@ -470,6 +505,258 @@ export const getBusinessTypes = async (req: any, res: Response): Promise<any> =>
 };
 
 // ============================================
+// BUSINESS REGISTRATION - GET SUBTYPES BY TYPE
+// ============================================
+export const getSubtypesByType = async (req: any, res: Response): Promise<any> => {
+    try {
+        const { typeId } = req.params;
+        const subtypes = await BusinessSubtype.find({ 
+            businessTypeId: typeId,
+            isActive: true 
+        }).sort({ name: 1 });
+        
+        return res.status(200).json({
+            success: true,
+            data: subtypes
+        });
+    } catch (error: any) {
+        console.error('Get Subtypes Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// BUSINESS REGISTRATION - CREATE BUSINESS
+// ============================================
+export const registerBusiness = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        console.log('📋 [BACKEND] Register Business - vendorId:', vendorId);
+        console.log('📋 [BACKEND] Request Body:', req.body);
+        console.log('📋 [BACKEND] Request Files:', req.files);
+
+        const {
+            businessTypeId,
+            businessName,
+            businessNtn,
+            businessEmail,
+            phone,
+            whatsapp,
+            landline,
+            addressCity,
+            addressCountry,
+            mapLocation,
+            open24_7,
+            businessTiming,
+            subtypes,
+            otherSubtype,
+            socialLinks
+        } = req.body;
+
+        // Validation
+        if (!businessTypeId || !businessName || !businessEmail || !phone || !addressCity || !addressCountry) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please fill all required fields (Business Type, Name, Email, Phone, City, Country)'
+            });
+        }
+
+        // Handle images
+        const files = req.files as any;
+        let businessLogo = '';
+        let coverImage = '';
+        let galleryImages: string[] = [];
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+        if (files) {
+            if (files.businessLogo && files.businessLogo[0]) {
+                businessLogo = `${baseUrl}/${files.businessLogo[0].path.replace(/\\/g, '/')}`;
+            }
+            if (files.coverImage && files.coverImage[0]) {
+                coverImage = `${baseUrl}/${files.coverImage[0].path.replace(/\\/g, '/')}`;
+            }
+            if (files.galleryImages) {
+                galleryImages = files.galleryImages.map((file: any) => 
+                    `${baseUrl}/${file.path.replace(/\\/g, '/')}`
+                );
+            }
+        }
+
+        // Parse timing
+        let parsedTiming = {};
+        try {
+            parsedTiming = businessTiming ? JSON.parse(businessTiming) : {};
+        } catch (e) {
+            parsedTiming = {};
+        }
+
+        // Parse subtypes
+        let parsedSubtypes: string[] = [];
+        try {
+            parsedSubtypes = subtypes ? JSON.parse(subtypes) : [];
+        } catch (e) {
+            parsedSubtypes = [];
+        }
+
+        // Parse social links
+        let parsedSocialLinks: string[] = [];
+        try {
+            parsedSocialLinks = socialLinks ? JSON.parse(socialLinks) : [];
+        } catch (e) {
+            parsedSocialLinks = [];
+        }
+
+        // Check if vendor already has a business
+        const existingBusiness = await Business.findOne({ vendorId, isDefault: true });
+        const isDefault = !existingBusiness;
+
+        // Create business
+        const business = await Business.create({
+            vendorId,
+            businessTypeId,
+            businessName: businessName.trim(),
+            businessNtn: businessNtn || '',
+            businessEmail: businessEmail.trim(),
+            phone: phone.trim(),
+            whatsapp: whatsapp || '',
+            landline: landline || '',
+            addressCity: addressCity.trim(),
+            addressCountry: addressCountry.trim(),
+            mapLocation: mapLocation || '',
+            open24_7: open24_7 === 'true' || open24_7 === true,
+            businessTiming: parsedTiming,
+            businessLogo,
+            coverImage,
+            galleryImages,
+            socialLinks: parsedSocialLinks,
+            subtypes: parsedSubtypes,
+            otherSubtype: otherSubtype || '',
+            status: 'pending',
+            subscriptionPlan: 'free',
+            isDefault
+        });
+
+        console.log('✅ [BACKEND] Business created:', business._id);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Business registered successfully! Waiting for admin approval.',
+            data: {
+                businessId: business._id,
+                businessName: business.businessName,
+                status: business.status
+            }
+        });
+
+    } catch (error: any) {
+        console.error('❌ [BACKEND] Register Business Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to register business'
+        });
+    }
+};
+
+// ============================================
+// BUSINESS REGISTRATION - GET VENDOR BUSINESSES
+// ============================================
+export const getVendorBusinesses = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        const businesses = await Business.find({ vendorId })
+            .populate('businessTypeId', 'name')
+            .populate('subtypes', 'name')
+            .sort({ isDefault: -1, createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            data: businesses
+        });
+
+    } catch (error: any) {
+        console.error('Get Vendor Businesses Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// BUSINESS REGISTRATION - SWITCH DEFAULT BUSINESS
+// ============================================
+export const switchDefaultBusiness = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        const { businessId } = req.params;
+        
+        if (!vendorId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Unauthorized'
+            });
+        }
+
+        // Verify business belongs to vendor
+        const business = await Business.findOne({ _id: businessId, vendorId });
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: 'Business not found'
+            });
+        }
+
+        // Remove default from all businesses
+        await Business.updateMany({ vendorId }, { isDefault: false });
+
+        // Set this business as default
+        business.isDefault = true;
+        await business.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Default business updated successfully'
+        });
+
+    } catch (error: any) {
+        console.error('Switch Default Business Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// 8. UPGRADE SUBSCRIPTION
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
+// ============================================
+export const getBusinessTypes = async (req: any, res: Response): Promise<any> => {
+    try {
+        const types = await BusinessType.find({ isActive: true }).sort({ name: 1 });
+        return res.status(200).json({
+            success: true,
+            data: types
+        });
+    } catch (error: any) {
+        console.error('Get Business Types Error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+<<<<<<< HEAD
 // BUSINESS REGISTRATION - GET SUBTYPES BY TYPE
 // ============================================
 export const getSubtypesByType = async (req: any, res: Response): Promise<any> => {
@@ -803,6 +1090,9 @@ export const switchDefaultBusiness = async (req: any, res: Response): Promise<an
 
 // ============================================
 // REQUEST TRIAL EXTENSION
+=======
+// 9. REQUEST TRIAL EXTENSION
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 // ============================================
 export const requestTrialExtension = async (req: any, res: Response): Promise<any> => {
     try {
@@ -908,7 +1198,11 @@ export const getTrialStatus = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
+<<<<<<< HEAD
 // START FREE TRIAL
+=======
+// 11. START FREE TRIAL
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 // ============================================
 export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
     try {
@@ -977,7 +1271,11 @@ export const startFreeTrial = async (req: any, res: Response): Promise<any> => {
 };
 
 // ============================================
+<<<<<<< HEAD
 // CANCEL SUBSCRIPTION REQUEST
+=======
+// 12. CANCEL SUBSCRIPTION REQUEST
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 // ============================================
 export const cancelSubscriptionRequest = async (req: any, res: Response): Promise<any> => {
     try {
@@ -1157,6 +1455,7 @@ export const getWithdrawalHistory = async (req: any, res: Response): Promise<any
 };
 
 // ============================================
+<<<<<<< HEAD
 // ✅ GET SUBSCRIPTION STATUS (VENDOR) - BUSINESS ONLY
 // ============================================
 export const getSubscriptionStatus = async (req: any, res: Response): Promise<any> => {
@@ -1232,6 +1531,13 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
     try {
         const vendorId = req.userId || req.user?._id;
         const { businessId } = req.params;
+=======
+// SUBSCRIPTION REQUEST - Vendor
+// ============================================
+export const requestSubscription = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId;
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         const {
             plan,
             amount,
@@ -1244,12 +1550,23 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             notes
         } = req.body;
 
+<<<<<<< HEAD
         console.log('📋 Business Subscription Request:', {
             vendorId,
             businessId,
             plan,
             amount,
             paymentMethod
+=======
+        console.log('📋 Subscription Request:', {
+            vendorId,
+            plan,
+            amount,
+            paymentMethod,
+            accountNumber,
+            accountHolderName,
+            phoneNumber
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         });
 
         if (!vendorId) {
@@ -1259,6 +1576,7 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
+<<<<<<< HEAD
         if (!businessId) {
             return res.status(400).json({
                 success: false,
@@ -1331,10 +1649,56 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             bankName: bankName || '',
             accountType: accountType || '',
             notes: notes || '',
+=======
+        if (!plan || !amount || !paymentMethod || !accountNumber || !accountHolderName) {
+            return res.status(400).json({
+                success: false,
+                message: 'All required fields must be filled'
+            });
+        }
+
+        const vendor = await User.findById(vendorId);
+        if (!vendor || vendor.role !== 'vendor') {
+            return res.status(404).json({
+                success: false,
+                message: 'Vendor not found'
+            });
+        }
+
+        // Check if already has pending request
+        const existingRequest = await SubscriptionRequest.findOne({
+            vendorId,
+            status: 'pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: 'You already have a pending subscription request. Please wait for admin approval.'
+            });
+        }
+
+        // Create subscription request
+        const subscriptionRequest = await SubscriptionRequest.create({
+            vendorId,
+            vendorName: vendor.name,
+            vendorEmail: vendor.email,
+            shopName: vendor.shopName || vendor.name + "'s Shop",
+            planType: plan,
+            amount,
+            paymentMethod,
+            accountNumber,
+            accountHolderName,
+            phoneNumber,
+            bankName,
+            accountType,
+            notes,
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
             status: 'pending',
             requestedAt: new Date()
         });
 
+<<<<<<< HEAD
         console.log(`✅ Business subscription request created: ${business.businessName} - ${plan} plan`);
 
         return res.status(201).json({
@@ -1347,10 +1711,28 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
                 status: 'pending',
                 requestId: subscriptionRequest._id,
                 totalPending: await SubscriptionRequest.countDocuments({ businessId: business._id, status: 'pending' })
+=======
+        // Update vendor status
+        await User.findByIdAndUpdate(vendorId, {
+            subscriptionStatus: 'pending_approval'
+        });
+
+        console.log('✅ Subscription request created:', subscriptionRequest._id);
+
+        return res.status(201).json({
+            success: true,
+            message: 'Subscription request sent to admin for approval!',
+            data: {
+                requestId: subscriptionRequest._id,
+                plan,
+                amount,
+                status: 'pending'
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
             }
         });
 
     } catch (error: any) {
+<<<<<<< HEAD
         console.error('❌ Business subscription request error:', error);
         return res.status(500).json({
             success: false,
@@ -1457,6 +1839,12 @@ export const getBusinessSubscriptionHistory = async (req: any, res: Response): P
         return res.status(500).json({
             success: false,
             message: error.message
+=======
+        console.error('Subscription request error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server error: ' + error.message
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         });
     }
 };

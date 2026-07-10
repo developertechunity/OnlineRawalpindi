@@ -1,8 +1,19 @@
 {
   "dependencies": {
+<<<<<<< HEAD
     "multer": "^2.2.0"
   },
   "devDependencies": {
     "@types/multer": "^2.2.0"
+=======
+    "axios": "^1.18.1",
+    "crypto": "^1.0.1",
+    "nodemailer": "^9.0.3",
+    "stripe": "^22.3.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.1",
+    "ts-node": "^10.9.2"
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
   }
 }

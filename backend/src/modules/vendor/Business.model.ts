@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 // backend/src/modules/vendor/Business.model.ts
 
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IBusiness extends Document {
@@ -33,7 +36,10 @@ export interface IBusiness extends Document {
     otherSubtype?: string;
     status: 'pending' | 'approved' | 'rejected';
     subscriptionPlan: 'free' | 'monthly' | 'yearly';
+<<<<<<< HEAD
     subscriptionStatus: 'pending' | 'approved' | 'rejected' | 'active' | 'none';
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     subscriptionStart?: Date;
     subscriptionEnd?: Date;
     isDefault: boolean;
@@ -88,11 +94,14 @@ const BusinessSchema: Schema = new Schema({
         enum: ['free', 'monthly', 'yearly'], 
         default: 'free' 
     },
+<<<<<<< HEAD
     subscriptionStatus: {
         type: String,
         enum: ['pending', 'approved', 'rejected', 'active', 'none'],
         default: 'none'
     },
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     subscriptionStart: { type: Date },
     subscriptionEnd: { type: Date },
     isDefault: { type: Boolean, default: false }
@@ -101,6 +110,9 @@ const BusinessSchema: Schema = new Schema({
 BusinessSchema.index({ vendorId: 1 });
 BusinessSchema.index({ status: 1 });
 BusinessSchema.index({ vendorId: 1, isDefault: 1 });
+<<<<<<< HEAD
 BusinessSchema.index({ vendorId: 1, subscriptionStatus: 1 });
+=======
+>>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 
 export default mongoose.model<IBusiness>('Business', BusinessSchema);
