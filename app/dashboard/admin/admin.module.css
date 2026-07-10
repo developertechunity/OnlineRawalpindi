@@ -433,7 +433,7 @@
 }
 
 /* ============================================
-   ACTION ICONS
+   ACTION ICONS - UPDATED (Only View & Delete)
    ============================================ */
 .actionIcons {
     display: flex;
@@ -473,28 +473,18 @@
     display: block;
 }
 
+/* ✅ View (Eye) Icon - Blue hover */
 .iconBtn:first-child:hover .iconSvg {
-    color: #28a745;
-}
-
-.iconBtn:first-child:hover {
-    background: #e8f5e9;
-}
-
-.iconBtn:nth-child(2):hover .iconSvg {
     color: #4a6cf7;
 }
 
-.iconBtn:nth-child(2):hover {
+.iconBtn:first-child:hover {
     background: #e8edfd;
 }
 
-.iconBtn:last-child .iconSvg {
-    color: #dc3545;
-}
-
+/* ✅ Delete Icon - Red hover */
 .iconBtn:last-child:hover .iconSvg {
-    color: #c82333;
+    color: #dc3545;
 }
 
 .iconBtn:last-child:hover {

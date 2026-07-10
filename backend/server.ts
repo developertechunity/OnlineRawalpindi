@@ -40,13 +40,26 @@ console.log('✅ Auth routes mounted on /api/auth');
 app.use('/api/auth', adminRoutes);
 console.log('✅ Admin routes mounted on /api/auth');
 
+// ✅ DEBUGGING - Admin routes list
+console.log('📋 ADMIN ROUTES REGISTERED:');
+try {
+    adminRoutes.stack.forEach((layer: any) => {
+        if (layer.route) {
+            const methods = Object.keys(layer.route.methods).join(', ').toUpperCase();
+            console.log(`   ${methods} /api/auth${layer.route.path}`);
+        }
+    });
+} catch (e) {
+    console.log('   (Could not list routes)');
+}
+
 // Rider routes
 app.use('/api/auth', riderRoutes);
 console.log('✅ Rider routes mounted on /api/auth');
 
-// ✅ Vendor routes - /api/vendor pe mount karo (Admin aur Aapka dono)
+// ✅ Vendor routes
 app.use('/api/auth/vendor', vendorRoutes);
-console.log('✅ Vendor routes mounted on /api/vendor');
+console.log('✅ Vendor routes mounted on /api/auth/vendor');
 
 // ✅ Payment routes
 app.use('/api/payment', paymentRoutes);
@@ -65,6 +78,15 @@ app.get('/', (req, res) => {
     res.json({ message: 'DigitalRawalpindi API is running!' });
 });
 
+// ✅ Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('❌ Server Error:', err);
+    res.status(500).json({
+        success: false,
+        message: err.message || 'Internal Server Error'
+    });
+});
+
 console.log('✅ Server starting...');
 console.log('📋 Available Routes:');
 console.log('   - GET  /api/test');
@@ -72,6 +94,10 @@ console.log('   - POST /api/auth/login');
 console.log('   - GET  /api/auth/vendors (Admin)');
 console.log('   - GET  /api/auth/withdrawals (Admin)');
 console.log('   - GET  /api/auth/subscriptions (Admin)');
+console.log('   - PUT  /api/auth/vendor/:id (Admin - Edit Profile) ✅');
+console.log('   - GET  /api/auth/vendor/:id (Admin - Get Vendor) ✅');
+console.log('   - GET  /api/auth/riders (Admin)');
+console.log('   - GET  /api/auth/customers (Admin)');
 console.log('   - GET  /api/vendor/test (Vendor Test)');
 console.log('   - GET  /api/vendor/dashboard-summary (Vendor)');
 console.log('   - GET  /api/vendor/products (Vendor)');
