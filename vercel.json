@@ -2,14 +2,33 @@
   "version": 2,
   "builds": [
     {
-      "src": "server.ts",
-      "use": "@vercel/node"
+      "src": "backend/server.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["backend/**/*.ts", "backend/uploads/**/*"]
+      }
     }
   ],
   "routes": [
     {
+      "src": "/api/test",
+      "dest": "backend/server.ts"
+    },
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "backend/server.ts"
+    },
+    {
+      "src": "/api/payment/(.*)",
+      "dest": "backend/server.ts"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "backend/server.ts"
+    },
+    {
       "src": "/(.*)",
-      "dest": "server.ts"
+      "dest": "backend/server.ts"
     }
   ]
 }
