@@ -94,7 +94,6 @@ interface StoreHours {
     [key: string]: { open: string; close: string };
 }
 
-<<<<<<< HEAD
 interface BusinessType {
     _id: string;
     name: string;
@@ -161,9 +160,6 @@ interface BusinessFormData {
 }
 
 const API_BASE = 'http://localhost:5002/api/auth/vendor';
-=======
-const API_BASE = 'http://localhost:5002/api/vendor';
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -980,7 +976,6 @@ export default function VendorDashboardPage() {
             }
         } catch (error: any) {
             console.error('❌ Add product error:', error);
-            console.error('❌ Response data:', error.response?.data);
             showToast(error.response?.data?.message || 'Failed to add product', 'error');
         }
     };
@@ -1123,7 +1118,7 @@ export default function VendorDashboardPage() {
     };
 
     // ============================================
-    // WITHDRAWAL REQUEST
+    // WITHDRAWAL
     // ============================================
     const handleWithdrawalSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1196,7 +1191,6 @@ export default function VendorDashboardPage() {
     // ============================================
     // SUBSCRIPTION HANDLERS
     // ============================================
-    
     const handleStartFreeTrial = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -1252,39 +1246,16 @@ export default function VendorDashboardPage() {
         if (!confirm(`Subscribe to ${plan} plan for PKR ${amount.toLocaleString()}?`)) return;
 
         try {
-<<<<<<< HEAD
             const result = await paymentService.subscribe(plan, token);
             if (result.success) {
                 showToast(`✅ ${plan} subscription successful!`, 'success');
-=======
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            const response = await axios.post(`${API_BASE}/subscription/upgrade`, { plan }, config);
-
-            if (response.data.success) {
-                showToast('✅ Subscription request sent for admin approval!', 'success');
-                
-                // ✅ Update state immediately
-                setSummary(prev => ({
-                    ...prev,
-                    subscription: {
-                        ...prev.subscription,
-                        plan: plan,
-                        status: 'pending_approval'
-                    }
-                }));
-                
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
                 await fetchDashboardData();
             } else {
                 showToast(result.message || 'Subscription failed', 'error');
             }
         } catch (error: any) {
             console.error('Subscription error:', error);
-<<<<<<< HEAD
             showToast(error.message || 'Something went wrong', 'error');
-=======
-            showToast(error.response?.data?.message || 'Failed to process subscription', 'error');
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
         }
     };
 
@@ -1350,7 +1321,6 @@ export default function VendorDashboardPage() {
     }, [fetchProducts, fetchEmployees]);
 
     // ============================================
-<<<<<<< HEAD
     // RENDER WORK HOURS SECTION
     // ============================================
     const renderWorkHours = () => {
@@ -2284,11 +2254,7 @@ export default function VendorDashboardPage() {
 
     // ============================================
     // RENDER WITHDRAWAL MODAL
-=======
-    // MODAL RENDER FUNCTIONS
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     // ============================================
-    
     const renderWithdrawalModal = () => {
         if (!showWithdrawalModal) return null;
 
@@ -2394,11 +2360,7 @@ export default function VendorDashboardPage() {
     };
 
     // ============================================
-<<<<<<< HEAD
     // RENDER ADD PRODUCT MODAL
-=======
-    // ADD PRODUCT MODAL
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     // ============================================
     const renderAddProductModal = () => {
         if (!showAddProduct) return null;
@@ -2463,10 +2425,6 @@ export default function VendorDashboardPage() {
                             />
                         </div>
 
-<<<<<<< HEAD
-=======
-                        {/* Product Images - REQUIRED */}
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Product Images * (Max 5)</label>
                             <input
@@ -2547,10 +2505,6 @@ export default function VendorDashboardPage() {
                             )}
                         </div>
 
-<<<<<<< HEAD
-=======
-                        {/* Colors - OPTIONAL */}
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Colors (Optional)</label>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -2602,10 +2556,6 @@ export default function VendorDashboardPage() {
                             </div>
                         </div>
 
-<<<<<<< HEAD
-=======
-                        {/* Sizes - OPTIONAL */}
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Sizes (Optional)</label>
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
@@ -2815,181 +2765,7 @@ export default function VendorDashboardPage() {
     };
 
     // ============================================
-<<<<<<< HEAD
     // RENDER PRODUCTS
-=======
-    // ✅ RENDER SUBSCRIPTION - FIXED
-    // ============================================
-    const renderSubscription = () => {
-        const isFreeTrialActive = summary.subscription.plan === 'free' && summary.subscription.status === 'active';
-        const isPaidPlanActive = summary.subscription.plan !== 'free' && summary.subscription.status === 'active';
-        const isPendingApproval = summary.subscription.status === 'pending_approval';
-
-        return (
-            <div className={styles.section}>
-                <h2 className={styles.sectionTitle}>📋 Subscription Plan</h2>
-                
-                {summary.subscription.showTrialWarning && summary.subscription.daysRemaining <= 3 && (
-                    <div style={{ 
-                        backgroundColor: '#fff3cd', 
-                        padding: '15px', 
-                        borderRadius: '8px', 
-                        marginBottom: '20px',
-                        border: '1px solid #ffc107'
-                    }}>
-                        <p style={{ margin: 0, color: '#856404' }}>
-                            ⚠️ Your trial ends in <strong>{summary.subscription.daysRemaining}</strong> days! 
-                            <button 
-                                style={{ marginLeft: '10px', background: 'none', border: 'none', color: '#856404', textDecoration: 'underline', cursor: 'pointer' }}
-                                onClick={() => setShowExtensionModal(true)}
-                            >
-                                Request Extension
-                            </button>
-                        </p>
-                    </div>
-                )}
-
-                {isPendingApproval && (
-                    <div style={{ 
-                        backgroundColor: '#cce5ff', 
-                        padding: '15px', 
-                        borderRadius: '8px', 
-                        marginBottom: '20px',
-                        border: '1px solid #004085'
-                    }}>
-                        <p style={{ margin: 0, color: '#004085' }}>
-                            ⏳ Your subscription request is pending admin approval. Please wait.
-                        </p>
-                    </div>
-                )}
-
-                <div className={styles.subscriptionCard}>
-                    {/* FREE TRIAL PLAN */}
-                    <div className={`${styles.planCard} ${isFreeTrialActive ? styles.planCardActive : ''}`}>
-                        {isFreeTrialActive && <div className={styles.planBadge}>Current Plan</div>}
-                        <h3 className={styles.planName}>Free Trial</h3>
-                        <p className={styles.planPrice}>PKR 0</p>
-                        <ul className={styles.planFeatures}>
-                            <li>✓ 30 Days Free</li>
-                            <li>✓ 50 Products</li>
-                            <li>✓ Basic Support</li>
-                        </ul>
-                        
-                        {isFreeTrialActive ? (
-                            <button className={styles.secondaryBtn} disabled>
-                                ✅ Active ({summary.subscription.daysRemaining} days left)
-                            </button>
-                        ) : isPendingApproval && summary.subscription.plan === 'free' ? (
-                            <button className={styles.secondaryBtn} disabled>
-                                ⏳ Pending Approval
-                            </button>
-                        ) : (
-                            <button 
-                                className={styles.primaryBtn}
-                                onClick={handleStartFreeTrial}
-                            >
-                                🚀 Start Free Trial
-                            </button>
-                        )}
-                    </div>
-
-                    {/* MONTHLY PLAN */}
-                    <div className={`${styles.planCard} ${summary.subscription.plan === 'monthly' && isPaidPlanActive ? styles.planCardActive : ''}`}>
-                        {(summary.subscription.plan === 'monthly' && isPaidPlanActive) && <div className={styles.planBadge}>Current Plan</div>}
-                        <h3 className={styles.planName}>Monthly</h3>
-                        <p className={styles.planPrice}>PKR 1,000 <span>/month</span></p>
-                        <ul className={styles.planFeatures}>
-                            <li>✓ Unlimited Products</li>
-                            <li>✓ Priority Support</li>
-                            <li>✓ Advanced Analytics</li>
-                        </ul>
-                        
-                        {isPaidPlanActive && summary.subscription.plan === 'monthly' ? (
-                            <button className={styles.secondaryBtn} disabled>
-                                ✅ Active
-                            </button>
-                        ) : isPendingApproval && summary.subscription.plan === 'monthly' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                                <button className={styles.secondaryBtn} disabled style={{ width: '100%' }}>
-                                    ⏳ Pending Approval
-                                </button>
-                                <button 
-                                    className={styles.dangerBtn}
-                                    onClick={handleCancelSubscriptionRequest}
-                                    style={{ width: '100%' }}
-                                >
-                                    ❌ Cancel Request
-                                </button>
-                            </div>
-                        ) : (
-                            <button 
-                                className={styles.primaryBtn}
-                                onClick={() => handleSubscribe('monthly')}
-                            >
-                                Subscribe
-                            </button>
-                        )}
-                    </div>
-
-                    {/* YEARLY PLAN */}
-                    <div className={`${styles.planCard} ${summary.subscription.plan === 'yearly' && isPaidPlanActive ? styles.planCardActive : ''}`}>
-                        {(summary.subscription.plan === 'yearly' && isPaidPlanActive) && <div className={styles.planBadge}>Current Plan</div>}
-                        <h3 className={styles.planName}>Yearly</h3>
-                        <p className={styles.planPrice}>PKR 10,000 <span>/year</span></p>
-                        <ul className={styles.planFeatures}>
-                            <li>✓ Everything in Monthly</li>
-                            <li>✓ 2 Months Free</li>
-                            <li>✓ VIP Support</li>
-                        </ul>
-                        
-                        {isPaidPlanActive && summary.subscription.plan === 'yearly' ? (
-                            <button className={styles.secondaryBtn} disabled>
-                                ✅ Active
-                            </button>
-                        ) : isPendingApproval && summary.subscription.plan === 'yearly' ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                                <button className={styles.secondaryBtn} disabled style={{ width: '100%' }}>
-                                    ⏳ Pending Approval
-                                </button>
-                                <button 
-                                    className={styles.dangerBtn}
-                                    onClick={handleCancelSubscriptionRequest}
-                                    style={{ width: '100%' }}
-                                >
-                                    ❌ Cancel Request
-                                </button>
-                            </div>
-                        ) : (
-                            <button 
-                                className={styles.primaryBtn}
-                                onClick={() => handleSubscribe('yearly')}
-                            >
-                                Subscribe
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {summary.subscription.hasRequestedExtension && (
-                    <div style={{ 
-                        backgroundColor: '#d4edda', 
-                        padding: '15px', 
-                        borderRadius: '8px', 
-                        marginTop: '20px',
-                        border: '1px solid #28a745'
-                    }}>
-                        <p style={{ margin: 0, color: '#155724' }}>
-                            ✅ Extension request sent to admin. Please wait for approval.
-                        </p>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // ============================================
-    // ✅ RENDER PRODUCTS
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
     // ============================================
     const renderProducts = () => {
         const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {

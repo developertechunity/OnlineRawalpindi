@@ -1,45 +1,8 @@
 {
-  "name": "digital-rawalpindi-backend",
-  "version": "1.0.0",
-  "type": "module",
-  "description": "Digital Rawalpindi Backend API",
-  "main": "server.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "dev": "nodemon --exec ts-node server.ts",
-    "vercel-build": "tsc"
-  },
   "dependencies": {
-    "@types/multer": "^2.0.0",
-    "axios": "^1.18.1",
-    "bcryptjs": "^2.4.3",
-    "cors": "^2.8.5",
-    "crypto": "^1.0.1",
-    "dotenv": "^16.0.0",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.0.0",
-    "multer": "^2.2.0",
-    "nodemailer": "^9.0.3",
-    "stripe": "^22.3.0"
+    "multer": "^2.2.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.2",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.17",
-    "@types/jsonwebtoken": "^9.0.1",
-    "@types/node": "^20.0.0",
-    "@types/nodemailer": "^8.0.1",
-    "nodemon": "^3.0.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.0.0"
-  },
-  "keywords": [
-    "digital-rawalpindi",
-    "ecommerce",
-    "backend"
-  ],
-  "author": "Mohsin",
-  "license": "ISC"
+    "@types/multer": "^2.2.0"
+  }
 }

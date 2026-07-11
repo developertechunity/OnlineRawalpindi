@@ -18,7 +18,6 @@ import {
     cancelSubscriptionRequest,
     requestWithdrawal,
     getWithdrawalHistory,
-    // Business Registration Functions
     getBusinessTypes,
     getSubtypesByType,
     registerBusiness,
@@ -82,11 +81,13 @@ router.post('/withdrawal/request', protect, requestWithdrawal);
 router.get('/withdrawal/history', protect, getWithdrawalHistory);
 
 // =========================================================
-// SUBSCRIPTION - TRIAL & UPGRADE
+// ❌ GLOBAL SUBSCRIPTION ROUTES - REMOVED
 // =========================================================
-router.post('/subscription/start-trial', protect, startFreeTrial);
-router.post('/subscription/cancel-request', protect, cancelSubscriptionRequest);
-router.post('/subscription/extend-trial', protect, requestTrialExtension);
+// router.post('/subscription/start-trial', protect, startFreeTrial);
+// router.post('/subscription/upgrade', protect, upgradeSubscriptionRequest);
+// router.post('/subscription/cancel-request', protect, cancelSubscriptionRequest);
+// router.post('/subscription/extend-trial', protect, requestTrialExtension);
+// router.post('/subscription/request', protect, requestSubscription);
 
 // =========================================================
 // BUSINESS REGISTRATION ROUTES

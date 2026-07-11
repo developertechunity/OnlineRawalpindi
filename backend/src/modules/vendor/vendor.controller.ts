@@ -11,7 +11,7 @@ import BusinessSubtype from './BusinessSubtype.model.js';
 import Business from './Business.model.js';
 
 // ============================================
-// 1. DASHBOARD DATA (UPDATED WITH BUSINESSES)
+// 1. DASHBOARD DATA
 // ============================================
 export const getVendorDashboardData = async (req: any, res: Response): Promise<any> => {
     try {
@@ -29,16 +29,15 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             return res.status(404).json({ success: false, message: 'Vendor not found' });
         }
 
-        // Get businesses for this vendor
         const businesses = await Business.find({ vendorId })
             .populate('businessTypeId', 'name')
             .sort({ isDefault: -1, createdAt: -1 });
 
-        // Get selected/default business
+        console.log(`📋 [VENDOR] Found ${businesses.length} businesses for vendor ${vendorId}`);
+
         const defaultBusiness = businesses.find(b => b.isDefault);
         const selectedBusinessId = defaultBusiness?._id || (businesses[0]?._id || '');
 
-        // If no business exists, return empty data
         if (businesses.length === 0) {
             return res.status(200).json({
                 success: true,
@@ -67,7 +66,6 @@ export const getVendorDashboardData = async (req: any, res: Response): Promise<a
             });
         }
 
-        // Get products and employees for the selected/default business
         const [productsCount, productsList, employeesList] = await Promise.all([
             Product.countDocuments({ vendorId }),
             Product.find({ vendorId }).select('_id productName price stockQuantity description status colors sizes images'),
@@ -495,6 +493,8 @@ export const getSubtypesByType = async (req: any, res: Response): Promise<any> =
 // ============================================
 // BUSINESS REGISTRATION - CREATE BUSINESS (FIXED - Free Trial included)
 // ============================================
+// backend/src/modules/vendor/vendor.controller.ts
+
 export const registerBusiness = async (req: any, res: Response): Promise<any> => {
     try {
         const vendorId = req.userId || req.user?._id;
@@ -586,7 +586,7 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
         const existingBusiness = await Business.findOne({ vendorId, isDefault: true });
         const isDefault = !existingBusiness;
 
-        // Create Business
+        // ✅ Create Business
         const business = await Business.create({
             vendorId,
             businessTypeId,
@@ -614,9 +614,9 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
 
         const vendor = await User.findById(vendorId);
 
-        // CHECK IF PLAN IS FREE OR PAID
+        // ✅ ✅ ✅ FIX: CHECK IF PLAN IS FREE OR PAID
         if (subscriptionPlan === 'free') {
-            // FREE TRIAL: DIRECTLY APPROVE - No request needed
+            // ✅ FREE TRIAL: DIRECTLY APPROVE - No request needed
             console.log(`📋 [BACKEND] Free Trial - Directly approving business: ${business.businessName}`);
             
             // Update Business
@@ -657,7 +657,7 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
             });
 
         } else {
-            // PAID PLANS (Monthly/Yearly): Need admin approval
+            // ✅ PAID PLANS (Monthly/Yearly): Need admin approval
             console.log(`📋 [BACKEND] Paid Plan - Creating subscription request for: ${business.businessName}`);
 
             // Update business status
@@ -732,7 +732,6 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
         });
     }
 };
-
 // ============================================
 // BUSINESS REGISTRATION - GET VENDOR BUSINESSES
 // ============================================
@@ -1158,7 +1157,7 @@ export const getWithdrawalHistory = async (req: any, res: Response): Promise<any
 };
 
 // ============================================
-// GET SUBSCRIPTION STATUS (VENDOR) - BUSINESS ONLY
+// ✅ GET SUBSCRIPTION STATUS (VENDOR) - BUSINESS ONLY
 // ============================================
 export const getSubscriptionStatus = async (req: any, res: Response): Promise<any> => {
     try {
@@ -1179,7 +1178,7 @@ export const getSubscriptionStatus = async (req: any, res: Response): Promise<an
             });
         }
 
-        // Only check BUSINESS subscriptions
+        // ✅ Only check BUSINESS subscriptions
         const pendingRequests = await SubscriptionRequest.find({
             vendorId,
             businessId: { $exists: true, $ne: null },
@@ -1227,7 +1226,7 @@ export const getSubscriptionStatus = async (req: any, res: Response): Promise<an
 };
 
 // ============================================
-// REQUEST BUSINESS SUBSCRIPTION - PER BUSINESS (FIXED)
+// ✅ REQUEST BUSINESS SUBSCRIPTION - PER BUSINESS (FIXED)
 // ============================================
 export const requestBusinessSubscription = async (req: any, res: Response): Promise<any> => {
     try {
@@ -1289,7 +1288,7 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
-        // Only check for this specific business's pending request
+        // ✅ ONLY check for this specific business's pending request
         const existingBusinessRequest = await SubscriptionRequest.findOne({
             businessId: business._id,
             status: 'pending'
@@ -1302,7 +1301,7 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
-        // BUSINESS CHECK: Agar business already active hai to block karein
+        // ✅ BUSINESS CHECK: Agar business already active hai to block karein
         if (business.subscriptionStatus === 'active') {
             return res.status(400).json({
                 success: false,
@@ -1310,12 +1309,12 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
-        // Business ko pending set karo
+        // ✅ Business ko pending set karo
         business.subscriptionPlan = plan;
         business.subscriptionStatus = 'pending';
         await business.save();
 
-        // Subscription request create karo
+        // ✅ Subscription request create karo
         const subscriptionRequest = await SubscriptionRequest.create({
             vendorId,
             businessId: business._id,
@@ -1361,7 +1360,7 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
 };
 
 // ============================================
-// GET BUSINESS SUBSCRIPTION STATUS
+// ✅ GET BUSINESS SUBSCRIPTION STATUS
 // ============================================
 export const getBusinessSubscriptionStatus = async (req: any, res: Response): Promise<any> => {
     try {
@@ -1421,7 +1420,7 @@ export const getBusinessSubscriptionStatus = async (req: any, res: Response): Pr
 };
 
 // ============================================
-// GET BUSINESS SUBSCRIPTION HISTORY
+// ✅ GET BUSINESS SUBSCRIPTION HISTORY
 // ============================================
 export const getBusinessSubscriptionHistory = async (req: any, res: Response): Promise<any> => {
     try {

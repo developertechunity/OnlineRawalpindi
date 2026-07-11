@@ -63,7 +63,7 @@ const SubscriptionRequestSchema: Schema = new Schema({
     },
     paymentMethod: {
         type: String,
-        enum: ['easypaisa', 'jazzcash', 'bank'],
+        enum: ['easypaisa', 'jazzcash', 'bank'], // ✅ No free_trial
         required: true
     },
     accountNumber: {
