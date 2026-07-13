@@ -48,7 +48,7 @@ export const createPayment = async (req: any, res: Response): Promise<any> => {
             orderId,
             order.orderNumber,
             customerId,
-            order.vendorId,
+            order.vendorId.toString(),
             amount || order.totalAmount,
             method,
             customerPhone,

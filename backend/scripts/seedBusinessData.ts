@@ -9,14 +9,9 @@ const __dirname = path.dirname(__filename);
 // Load env
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-// Import models - .ts extension ke saath
-<<<<<<< HEAD
+// Import models - .js extension ke saath
 import BusinessType from '../src/modules/vendor/BusinessType.model.js';
 import BusinessSubtype from '../src/modules/vendor/BusinessSubtype.model.js';
-=======
-import BusinessType from '../src/modules/vendor/BusinessType.model.ts';
-import BusinessSubtype from '../src/modules/vendor/BusinessSubtype.model.ts';
->>>>>>> cde636d9b5fb00d45366249cf3bdf79103424c5e
 
 const seedData = async () => {
     try {

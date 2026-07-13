@@ -44,6 +44,10 @@ export const getRiderProfile = async (req: Request, res: Response) => {
             rider = await Rider.findOne({ userId }).populate('userId', 'name email phone');
         }
 
+        if (!rider) {
+            return res.status(500).json({ success: false, message: 'Unable to load rider profile' });
+        }
+
         res.json({
             success: true,
             rider: {

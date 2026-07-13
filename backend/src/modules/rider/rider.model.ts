@@ -16,6 +16,8 @@ export interface IRider extends Document {
         lng: number;
     };
     currentOrder?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 const RiderSchema: Schema = new Schema({

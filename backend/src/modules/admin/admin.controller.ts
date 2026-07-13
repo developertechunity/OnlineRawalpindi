@@ -974,7 +974,7 @@ export const updateBusiness = async (req: Request, res: Response) => {
             'businessTypeId', 
             'businessLicense',
             'subtypes'
-        ];
+        ] as const;
 
         allowedFields.forEach(field => {
             if (updates[field] !== undefined && updates[field] !== null) {
@@ -990,7 +990,7 @@ export const updateBusiness = async (req: Request, res: Response) => {
                         console.error('❌ Error parsing subtypes:', e);
                     }
                 } else {
-                    business[field] = updates[field];
+                    (business as any)[field] = updates[field];
                 }
             }
         });

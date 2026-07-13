@@ -10,6 +10,7 @@ export interface ISubscriptionRequest extends Document {
     shopName: string;
     businessName?: string;
     planType: 'monthly' | 'yearly'; // ✅ Only monthly/yearly
+    plan?: string; // Optional fallback alias for planType
     amount: number;
     paymentMethod: 'easypaisa' | 'jazzcash' | 'bank';
     accountNumber: string;

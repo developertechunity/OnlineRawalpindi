@@ -42,7 +42,17 @@ export interface IUser extends Document {
     subscriptionStatus?: string;
     subscriptionPlan?: string;
     subscriptionExpiryDate?: Date;
+    subscriptionEndDate?: Date;
     hasRequestedExtension?: boolean;
+
+    // Trial
+    trialStartDate?: Date;
+    trialEndDate?: Date;
+
+    // Earnings
+    totalEarnings?: number;
+    availableBalance?: number;
+    totalOrdersCount?: number;
     
     // Withdrawals
     pendingWithdrawals?: number;
@@ -93,7 +103,17 @@ const UserSchema = new Schema<IUser>({
     subscriptionStatus: { type: String, default: 'none' },
     subscriptionPlan: { type: String, default: 'free' },
     subscriptionExpiryDate: { type: Date },
+    subscriptionEndDate: { type: Date },
     hasRequestedExtension: { type: Boolean, default: false },
+
+    // Trial
+    trialStartDate: { type: Date },
+    trialEndDate: { type: Date },
+
+    // Earnings
+    totalEarnings: { type: Number, default: 0 },
+    availableBalance: { type: Number, default: 0 },
+    totalOrdersCount: { type: Number, default: 0 },
     
     // Withdrawals
     pendingWithdrawals: { type: Number, default: 0 },

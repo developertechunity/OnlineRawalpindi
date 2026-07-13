@@ -151,7 +151,7 @@ export class PaymentService {
             if (!payment) throw new Error('COD payment not found');
 
             payment.status = 'success';
-            payment.codCollectedBy = riderId;
+            payment.codCollectedBy = new mongoose.Types.ObjectId(riderId);
             payment.paymentData = { ...payment.paymentData, collectedAt: new Date(), collectedBy: riderId, amount };
             await payment.save();
 
@@ -181,7 +181,7 @@ export class PaymentService {
 
             payment.codDepositedToAdmin = true;
             payment.codDepositDate = new Date();
-            payment.adminId = adminId;
+            payment.adminId = new mongoose.Types.ObjectId(adminId);
             await payment.save();
 
             return { success: true, message: 'COD deposited to admin' };
@@ -327,7 +327,7 @@ export class PaymentService {
             payment.refundId = `REF${Date.now()}`;
             payment.refundAmount = amount || payment.amount;
             payment.refundReason = reason;
-            payment.refundApprovedBy = adminId;
+            payment.refundApprovedBy = new mongoose.Types.ObjectId(adminId);
             payment.refundApprovedAt = new Date();
             await payment.save();
 

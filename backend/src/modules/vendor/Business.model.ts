@@ -25,6 +25,7 @@ export interface IBusiness extends Document {
         saturday?: { open: string; close: string };
         sunday?: { open: string; close: string };
     };
+    businessTimings?: any;
     businessLogo?: string;
     coverImage?: string;
     galleryImages?: string[];
@@ -34,8 +35,8 @@ export interface IBusiness extends Document {
     status: 'pending' | 'approved' | 'rejected';
     subscriptionPlan: 'free' | 'monthly' | 'yearly';
     subscriptionStatus: 'pending' | 'approved' | 'rejected' | 'active' | 'none';
-    subscriptionStart?: Date;
-    subscriptionEnd?: Date;
+    subscriptionStart?: Date | null;
+    subscriptionEnd?: Date | null;
     isDefault: boolean;
     createdAt: Date;
     updatedAt: Date;

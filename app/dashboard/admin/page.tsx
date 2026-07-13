@@ -354,9 +354,9 @@ export default function AdminDashboardPage() {
     const [showAddCommission, setShowAddCommission] = useState(false);
 
     const [employeeForm, setEmployeeForm] = useState({ name: '', email: '', role: 'Vendor Manager' });
-    const [couponForm, setCouponForm] = useState({ code: '', type: 'percentage' as const, discount: '', expiry: '' });
-    const [announcementForm, setAnnouncementForm] = useState({ title: '', content: '', audience: 'all' as const });
-    const [commissionForm, setCommissionForm] = useState({ name: '', type: 'percentage' as const, value: '', description: '' });
+    const [couponForm, setCouponForm] = useState<{ code: string; type: 'percentage' | 'fixed'; discount: string; expiry: string }>({ code: '', type: 'percentage', discount: '', expiry: '' });
+    const [announcementForm, setAnnouncementForm] = useState<{ title: string; content: string; audience: 'all' | 'vendors' | 'customers' | 'riders' }>({ title: '', content: '', audience: 'all' });
+    const [commissionForm, setCommissionForm] = useState<{ name: string; type: 'percentage' | 'fixed'; value: string; description: string }>({ name: '', type: 'percentage', value: '', description: '' });
 
     const API_URL = 'http://localhost:5002';
 

@@ -58,6 +58,7 @@ interface Business {
     phone: string;
     addressCity: string;
     addressCountry: string;
+    subscriptionStatus?: 'pending' | 'approved' | 'rejected' | 'none';
 }
 
 interface DashboardSummary {
@@ -2463,7 +2464,7 @@ export default function VendorDashboardPage() {
                                                         imagePreviews: prev.imagePreviews.filter((_, i) => i !== index),
                                                         images: prev.images.filter((_, i) => i !== index)
                                                     }));
-                                                    if (fileInputRef.current && prev.images.length <= 1) {
+                                                    if (fileInputRef.current && productForm.images.length <= 1) {
                                                         fileInputRef.current.value = '';
                                                     }
                                                 }}
