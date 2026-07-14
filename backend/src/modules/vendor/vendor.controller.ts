@@ -1,6 +1,7 @@
 // backend/src/modules/vendor/vendor.controller.ts
 
 import { Request, Response } from 'express';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../lib/cloudinary';
 import User from '../auth/User.model.js';
 import Product from './Product.model.js';
 import Employee from './Employee.model.js';
@@ -175,13 +176,12 @@ export const getProducts = async (req: any, res: Response): Promise<any> => {
 
         const products = await Product.find({ vendorId });
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
         const formattedProducts = products.map((p: any) => {
             let images = p.images || [];
             if (Array.isArray(images) && images.length > 0) {
                 images = images.map((img: string) => {
                     if (img.startsWith('http')) return img;
-                    return `${baseUrl}/${img.replace(/\\/g, '/')}`;
+                    return img;
                 });
             }
             return {
@@ -284,10 +284,10 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
             });
         }
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        let imagePaths: string[] = files.map(file => {
-            return `${baseUrl}/${file.path.replace(/\\/g, '/')}`;
-        });
+        const uploadedImages = await Promise.all(
+            files.map(file => uploadToCloudinary(file.buffer, 'digital-rawalpindi/products'))
+        );
+        const imagePaths: string[] = uploadedImages.map(img => img.url);
 
         const newProduct = await Product.create({
             vendorId,
@@ -491,10 +491,8 @@ export const getSubtypesByType = async (req: any, res: Response): Promise<any> =
 };
 
 // ============================================
-// BUSINESS REGISTRATION - CREATE BUSINESS (FIXED - Free Trial included)
+// BUSINESS REGISTRATION - CREATE BUSINESS
 // ============================================
-// backend/src/modules/vendor/vendor.controller.ts
-
 export const registerBusiness = async (req: any, res: Response): Promise<any> => {
     try {
         const vendorId = req.userId || req.user?._id;
@@ -546,19 +544,20 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
         let coverImage = '';
         let galleryImages: string[] = [];
 
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-
         if (files) {
             if (files.businessLogo && files.businessLogo[0]) {
-                businessLogo = `${baseUrl}/${files.businessLogo[0].path.replace(/\\/g, '/')}`;
+                businessLogo = (await uploadToCloudinary(files.businessLogo[0].buffer, 'digital-rawalpindi/logos')).url;
             }
             if (files.coverImage && files.coverImage[0]) {
-                coverImage = `${baseUrl}/${files.coverImage[0].path.replace(/\\/g, '/')}`;
+                coverImage = (await uploadToCloudinary(files.coverImage[0].buffer, 'digital-rawalpindi/covers')).url;
             }
-            if (files.galleryImages) {
-                galleryImages = files.galleryImages.map((file: any) => 
-                    `${baseUrl}/${file.path.replace(/\\/g, '/')}`
+            if (files.galleryImages && files.galleryImages.length > 0) {
+                const uploadedGallery = await Promise.all(
+                    files.galleryImages.map((file: any) =>
+                        uploadToCloudinary(file.buffer, 'digital-rawalpindi/gallery')
+                    )
                 );
+                galleryImages = uploadedGallery.map(img => img.url);
             }
         }
 
@@ -614,17 +613,14 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
 
         const vendor = await User.findById(vendorId);
 
-        // ✅ ✅ ✅ FIX: CHECK IF PLAN IS FREE OR PAID
+        // ✅ CHECK IF PLAN IS FREE OR PAID
         if (subscriptionPlan === 'free') {
-            // ✅ FREE TRIAL: DIRECTLY APPROVE - No request needed
             console.log(`📋 [BACKEND] Free Trial - Directly approving business: ${business.businessName}`);
             
-            // Update Business
             business.status = 'approved';
             business.subscriptionPlan = 'free';
             business.subscriptionStatus = 'approved';
             
-            // Set trial end date (30 days from now)
             const trialEndDate = new Date();
             trialEndDate.setDate(trialEndDate.getDate() + 30);
             business.subscriptionEnd = trialEndDate;
@@ -632,7 +628,6 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
             await business.save();
             console.log(`✅ Business APPROVED: ${business.businessName} -> Free Trial, ends: ${trialEndDate}`);
 
-            // Update Vendor
             if (vendor) {
                 vendor.subscriptionPlan = 'free';
                 vendor.subscriptionStatus = 'active';
@@ -660,13 +655,11 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
             // ✅ PAID PLANS (Monthly/Yearly): Need admin approval
             console.log(`📋 [BACKEND] Paid Plan - Creating subscription request for: ${business.businessName}`);
 
-            // Update business status
             business.status = 'pending';
             business.subscriptionPlan = subscriptionPlan;
             business.subscriptionStatus = 'pending';
             await business.save();
 
-            // Check for existing pending request
             const existingRequest = await SubscriptionRequest.findOne({
                 businessId: business._id,
                 status: 'pending'
@@ -686,7 +679,7 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
                 });
             }
 
-            // Create subscription request for paid plans
+            // ✅ FIXED: Status type safety - Using 'as const' for literal type
             const subscriptionRequestData = {
                 vendorId,
                 businessId: business._id,
@@ -702,7 +695,7 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
                 phoneNumber: phoneNumber || phone || '',
                 bankName: bankName || '',
                 notes: notes || '',
-                status: 'pending',
+                status: 'pending' as const,
                 requestedAt: new Date()
             };
 
@@ -728,10 +721,66 @@ export const registerBusiness = async (req: any, res: Response): Promise<any> =>
         console.error('❌ [BACKEND] Register Business Error:', error);
         return res.status(500).json({
             success: false,
-            message: error.message || 'Failed to register business'
+            message: error.message
         });
     }
 };
+
+// ============================================
+// ✅ CLOUDINARY - UPLOAD SINGLE VENDOR IMAGE
+// ============================================
+export const uploadVendorImage = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        if (!vendorId) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const file = req.file as Express.Multer.File;
+        if (!file) {
+            return res.status(400).json({ success: false, message: 'No image provided' });
+        }
+
+        const result = await uploadToCloudinary(file.buffer, 'digital-rawalpindi/vendors');
+
+        return res.status(200).json({
+            success: true,
+            url: result.url,
+            publicId: result.publicId
+        });
+    } catch (error: any) {
+        console.error('❌ [CLOUDINARY] Upload error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ============================================
+// ✅ CLOUDINARY - DELETE VENDOR IMAGE
+// ============================================
+export const deleteVendorImage = async (req: any, res: Response): Promise<any> => {
+    try {
+        const vendorId = req.userId || req.user?._id;
+        if (!vendorId) {
+            return res.status(401).json({ success: false, message: 'Unauthorized' });
+        }
+
+        const { publicId } = req.params;
+        if (!publicId) {
+            return res.status(400).json({ success: false, message: 'publicId is required' });
+        }
+
+        await deleteFromCloudinary(publicId);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Image deleted from Cloudinary'
+        });
+    } catch (error: any) {
+        console.error('❌ [CLOUDINARY] Delete error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // ============================================
 // BUSINESS REGISTRATION - GET VENDOR BUSINESSES
 // ============================================
@@ -1178,7 +1227,6 @@ export const getSubscriptionStatus = async (req: any, res: Response): Promise<an
             });
         }
 
-        // ✅ Only check BUSINESS subscriptions
         const pendingRequests = await SubscriptionRequest.find({
             vendorId,
             businessId: { $exists: true, $ne: null },
@@ -1226,7 +1274,7 @@ export const getSubscriptionStatus = async (req: any, res: Response): Promise<an
 };
 
 // ============================================
-// ✅ REQUEST BUSINESS SUBSCRIPTION - PER BUSINESS (FIXED)
+// ✅ REQUEST BUSINESS SUBSCRIPTION - PER BUSINESS
 // ============================================
 export const requestBusinessSubscription = async (req: any, res: Response): Promise<any> => {
     try {
@@ -1288,7 +1336,6 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
-        // ✅ ONLY check for this specific business's pending request
         const existingBusinessRequest = await SubscriptionRequest.findOne({
             businessId: business._id,
             status: 'pending'
@@ -1301,7 +1348,6 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
-        // ✅ BUSINESS CHECK: Agar business already active hai to block karein
         if (business.subscriptionStatus === 'active') {
             return res.status(400).json({
                 success: false,
@@ -1309,12 +1355,11 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             });
         }
 
-        // ✅ Business ko pending set karo
         business.subscriptionPlan = plan;
         business.subscriptionStatus = 'pending';
         await business.save();
 
-        // ✅ Subscription request create karo
+        // ✅ FIXED: Status type safety
         const subscriptionRequest = await SubscriptionRequest.create({
             vendorId,
             businessId: business._id,
@@ -1331,7 +1376,7 @@ export const requestBusinessSubscription = async (req: any, res: Response): Prom
             bankName: bankName || '',
             accountType: accountType || '',
             notes: notes || '',
-            status: 'pending',
+            status: 'pending' as const,
             requestedAt: new Date()
         });
 

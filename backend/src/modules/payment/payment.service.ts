@@ -46,12 +46,17 @@ export class PaymentService {
                     throw new Error('Invalid payment method');
             }
 
+            // ✅ FIXED: null values ko undefined mein convert karo
+            const subscriptionEndDate = isSubscription 
+                ? new Date(Date.now() + (subscriptionPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000)
+                : undefined;
+
             const payment = await Payment.create({
                 orderId,
                 orderNumber,
                 customerId,
                 vendorId,
-                riderId: riderId || null,
+                riderId: riderId || undefined,  // ✅ null ki jagah undefined
                 amount,
                 commissionAmount,
                 vendorAmount,
@@ -62,14 +67,14 @@ export class PaymentService {
                 status: method === 'cod' ? 'pending' : 'processing',
                 paymentData: result,
                 isSubscription,
-                subscriptionPlan: isSubscription ? subscriptionPlan : null,
-                subscriptionStartDate: isSubscription ? new Date() : null,
-                subscriptionEndDate: isSubscription ? 
-                    new Date(Date.now() + (subscriptionPlan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000) : null,
+                subscriptionPlan: isSubscription ? subscriptionPlan : undefined,  // ✅ null ki jagah undefined
+                subscriptionStartDate: isSubscription ? new Date() : undefined,   // ✅ null ki jagah undefined
+                subscriptionEndDate: subscriptionEndDate,  // ✅ null ki jagah undefined
                 ...(method === 'cod' && { codCollectedBy: riderId })
             });
 
-            if (payment.status === 'success') {
+            // ✅ FIXED: Type guard for payment status
+            if (payment && payment.status === 'success') {
                 await User.findByIdAndUpdate(vendorId, {
                     $inc: { availableBalance: vendorAmount }
                 });
@@ -192,7 +197,7 @@ export class PaymentService {
     }
 
     // ============================================
-    // 7. VENDOR SUBSCRIPTION - FIXED
+    // 7. VENDOR SUBSCRIPTION
     // ============================================
     static async processVendorSubscription(
         vendorId: string,
@@ -202,8 +207,9 @@ export class PaymentService {
         try {
             const transactionId = `SUB${Date.now()}${Math.floor(Math.random() * 1000)}`;
             
-            // ✅ FIXED: Properly use mongoose.Types.ObjectId
             const orderId = new mongoose.Types.ObjectId();
+            
+            const subscriptionEndDate = new Date(Date.now() + (plan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
             
             const payment = await Payment.create({
                 orderId: orderId,
@@ -220,7 +226,7 @@ export class PaymentService {
                 isSubscription: true,
                 subscriptionPlan: plan,
                 subscriptionStartDate: new Date(),
-                subscriptionEndDate: new Date(Date.now() + (plan === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000),
+                subscriptionEndDate: subscriptionEndDate,
                 notes: `Vendor subscription: ${plan} plan`
             });
 

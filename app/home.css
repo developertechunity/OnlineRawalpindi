@@ -1,3 +1,4 @@
+/* app/home.css */
 .container {
     display: flex;
     justify-content: center;
@@ -53,7 +54,6 @@
     margin-bottom: 30px;
 }
 
-/* FIX: Border top ab CSS Variable use karega */
 .card {
     padding: 25px 15px;
     border-radius: 12px;
@@ -63,7 +63,7 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     text-align: center;
     position: relative;
-    border-top: 5px solid var(--role-color, transparent); 
+    border-top: 5px solid transparent;
 }
 
 .card:hover {
@@ -90,13 +90,11 @@
     margin: 5px 0;
 }
 
-/* FIX: Arrow ka color bhi CSS Variable se control hoga */
 .cardArrow {
     font-size: 20px;
     font-weight: bold;
     display: inline-block;
     margin-top: 5px;
-    color: var(--role-color, #4a6cf7);
 }
 
 .footer {

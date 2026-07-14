@@ -1,8 +1,8 @@
+// app/page.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
-import styles from './home.module.css';
-import { Suspense, useState } from 'react';
+import './home.css'; // ✅ CSS import (not module)
 
 interface Role {
     id: 'admin' | 'vendor' | 'customer' | 'rider';
@@ -13,7 +13,7 @@ interface Role {
 }
 
 const roles: Role[] = [
-    { id: 'admin', label: 'Admin', icon: '🛒', color: '#dc3545', description: 'Manage the platform' },
+    { id: 'admin', label: 'Admin', icon: '⚙️', color: '#dc3545', description: 'Manage the platform' },
     { id: 'vendor', label: 'Vendor', icon: '🏪', color: '#28a745', description: 'Sell your products' },
     { id: 'customer', label: 'Customer', icon: '🛍️', color: '#4a6cf7', description: 'Shop & buy' },
     { id: 'rider', label: 'Rider', icon: '🛵', color: '#ffc107', description: 'Deliver orders' }
@@ -27,31 +27,50 @@ export default function HomePage() {
     };
 
     return (
-        <div className={styles.container}>
-            <div className={styles.content}>
-                <div className={styles.brand}>
-                    <h1 className={styles.title}>
-                        🏪 Digital<span className={styles.titleHighlight}>Rawalpindi</span>
+        <div className="container">
+            <div className="content">
+                <div className="brand">
+                    <h1 className="title">
+                        🏪 Digital<span className="titleHighlight">Rawalpindi</span>
                     </h1>
-                    <p className={styles.subtitle}>Rawalpindi&apos;s Premier Multi-Vendor Marketplace</p>
-                    <p className={styles.description}>Choose your role to get started</p>
+                    <p className="subtitle">Rawalpindi&apos;s Premier Multi-Vendor Marketplace</p>
+                    <p className="description">Choose your role to get started</p>
                 </div>
 
-                <div className={styles.cardContainer}>
+                <div className="cardContainer">
                     {roles.map((role) => (
                         <div
                             key={role.id}
-                            className={styles.card}
+                            className="card"
                             onClick={() => handleRoleClick(role.id)}
-                            /* FIX: Inline style ki bajaye humne ek CSS Variable pass kiya jo pure card layout me use ho sake */
-                            style={{ '--role-color': role.color } as React.CSSProperties}
+                            style={{ 
+                                borderTopColor: role.color
+                            }}
                         >
-                            <div className={styles.cardIcon}>{role.icon}</div>
-                            <h3 className={styles.cardTitle}>{role.label}</h3>
-                            <p className={styles.cardDesc}>{role.description}</p>
-                            <span className={styles.cardArrow}>→</span>
+                            <div className="cardIcon">{role.icon}</div>
+                            <h3 className="cardTitle">{role.label}</h3>
+                            <p className="cardDesc">{role.description}</p>
+                            <span 
+                                className="cardArrow"
+                                style={{ color: role.color }}
+                            >
+                                →
+                            </span>
                         </div>
                     ))}
+                </div>
+
+                <div className="footer">
+                    <p>
+                        Don&apos;t have an account?{' '}
+                        <span 
+                            className="footerLink"
+                            onClick={() => router.push('/auth/register')}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            Register here
+                        </span>
+                    </p>
                 </div>
             </div>
         </div>

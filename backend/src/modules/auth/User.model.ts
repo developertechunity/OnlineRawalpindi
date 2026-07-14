@@ -1,3 +1,5 @@
+// backend/src/modules/auth/User.model.ts
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
@@ -122,13 +124,12 @@ const UserSchema = new Schema<IUser>({
     timestamps: true
 });
 
-// Generate vendor ID before saving
-UserSchema.pre('save', async function(next) {
+// ✅ FIXED: Generate vendor ID before saving - CORRECT SYNTAX
+UserSchema.pre('save', async function(this: IUser) {
     if (this.role === 'vendor' && !this.vendorId) {
         const count = await mongoose.model('User').countDocuments({ role: 'vendor' });
         this.vendorId = `V-${String(count + 1).padStart(4, '0')}`;
     }
-    next();
 });
 
 const User = mongoose.model<IUser>('User', UserSchema);

@@ -19,14 +19,12 @@
     "noEmit": false,
     "incremental": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "app/*"
-      ],
-      "next/*": [
-        "node_modules/next/*.d.ts"
       ]
     },
     "plugins": [

@@ -659,40 +659,69 @@ export default function AdminDashboardPage() {
     // ✅ FETCH FUNCTIONS
     // ============================================
     const filteredSubscriptions = useMemo(() => {
-        let filtered = [...subscriptionRequests];
+    let filtered = [...subscriptionRequests];
 
-        if (subFilterStatus !== 'all') {
-            filtered = filtered.filter(s => s.status === subFilterStatus);
-        }
+    if (subFilterStatus !== 'all') {
+        filtered = filtered.filter(s => s.status === subFilterStatus);
+    }
 
-        if (subSearchTerm.trim()) {
-            const term = subSearchTerm.toLowerCase().trim();
-            filtered = filtered.filter(s => {
-                return (
-                    s.businessName?.toLowerCase().includes(term) ||
-                    s.businessEmail?.toLowerCase().includes(term) ||
-                    s.vendorName?.toLowerCase().includes(term) ||
-                    s.vendorEmail?.toLowerCase().includes(term) ||
-                    s.id?.toLowerCase().includes(term) ||
-                    s.paymentMethod?.toLowerCase().includes(term) ||
-                    s.plan?.toLowerCase().includes(term) ||
-                    s.planType?.toLowerCase().includes(term) ||
-                    s.accountNumber?.toLowerCase().includes(term) ||
-                    s.status?.toLowerCase().includes(term) ||
-                    (s.amount && s.amount.toString().includes(term)) ||
-                    (s.createdAt && s.createdAt.includes(term)) ||
-                    (s.requestedAt && s.requestedAt.includes(term))
-                );
-            });
-        }
-
-        filtered.sort((a, b) => {
-            return new Date(b.createdAt || b.requestedAt || 0).getTime() - 
-                   new Date(a.createdAt || a.requestedAt || 0).getTime();
+    if (subSearchTerm.trim()) {
+        const term = subSearchTerm.toLowerCase().trim();
+        filtered = filtered.filter(s => {
+            return (
+                // ✅ Business Name
+                (s.businessName?.toLowerCase().includes(term) || false) ||
+                // ✅ Business Email
+                (s.businessEmail?.toLowerCase().includes(term) || false) ||
+                // ✅ Vendor Name
+                (s.vendorName?.toLowerCase().includes(term) || false) ||
+                // ✅ Vendor Email
+                (s.vendorEmail?.toLowerCase().includes(term) || false) ||
+                // ✅ Vendor ID
+                (s.vendorId?.toLowerCase().includes(term) || false) ||
+                // ✅ Request ID
+                (s.id?.toLowerCase().includes(term) || false) ||
+                // ✅ Shop Name
+                (s.shopName?.toLowerCase().includes(term) || false) ||
+                // ✅ Plan Type (Monthly/Yearly)
+                (s.plan?.toLowerCase().includes(term) || false) ||
+                (s.planType?.toLowerCase().includes(term) || false) ||
+                // ✅ Payment Method
+                (s.paymentMethod?.toLowerCase().includes(term) || false) ||
+                // ✅ Account Number
+                (s.accountNumber?.toLowerCase().includes(term) || false) ||
+                // ✅ Account Holder Name
+                (s.accountHolderName?.toLowerCase().includes(term) || false) ||
+                // ✅ Bank Name
+                (s.bankName?.toLowerCase().includes(term) || false) ||
+                // ✅ Phone Number
+                (s.phoneNumber?.toLowerCase().includes(term) || false) ||
+                // ✅ Notes
+                (s.notes?.toLowerCase().includes(term) || false) ||
+                // ✅ Status (Pending/Approved/Rejected)
+                (s.status?.toLowerCase().includes(term) || false) ||
+                // ✅ Amount (as string)
+                (s.amount && s.amount.toString().includes(term)) ||
+                // ✅ Requested Date
+                (s.requestedAt && s.requestedAt.includes(term)) ||
+                (s.createdAt && s.createdAt.includes(term)) ||
+                // ✅ Business ID
+                (s.businessId?.toLowerCase().includes(term) || false) ||
+                // ✅ Search by number in any field
+                (s.id && s.id.toString().includes(term)) ||
+                (s.vendorId && s.vendorId.toString().includes(term))
+            );
         });
+    }
 
-        return filtered;
-    }, [subscriptionRequests, subSearchTerm, subFilterStatus]);
+    // Sort by newest first
+    filtered.sort((a, b) => {
+        return new Date(b.createdAt || b.requestedAt || 0).getTime() - 
+               new Date(a.createdAt || a.requestedAt || 0).getTime();
+    });
+
+    return filtered;
+}, [subscriptionRequests, subSearchTerm, subFilterStatus]);
 
     const subTotalItems = filteredSubscriptions.length;
     const subTotalPages = Math.ceil(subTotalItems / subItemsPerPage);

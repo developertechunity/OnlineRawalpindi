@@ -140,7 +140,7 @@ export default function RiderDashboardPage() {
     const mapRef = useRef<HTMLDivElement>(null);
     const [mapInstance, setMapInstance] = useState<any>(null);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
+    const API_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002').replace(/\/api\/?$/, '');
 
     // ============================================
     // FETCH ALL DATA

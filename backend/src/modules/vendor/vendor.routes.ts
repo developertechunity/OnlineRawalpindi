@@ -2,8 +2,7 @@
 
 import express from 'express';
 import { protect } from '../auth/auth.middleware.js';
-import { upload } from './vendor.middleware.js';
-
+import { upload } from '../../lib/multer';
 import {
     getVendorDashboardData,
     getProducts,
@@ -26,7 +25,9 @@ import {
     getSubscriptionStatus,
     requestBusinessSubscription,
     getBusinessSubscriptionStatus,
-    getBusinessSubscriptionHistory
+    getBusinessSubscriptionHistory,
+    uploadVendorImage,
+    deleteVendorImage
 } from './vendor.controller.js';
 
 const router = express.Router();
@@ -41,6 +42,15 @@ router.get('/test', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+// Single file upload
+router.post(
+  '/:vendorId/logo',
+  upload.single('image'), // 'image' form field name
+  uploadVendorImage
+);
+
+// Delete image
+router.delete('/image/:publicId', deleteVendorImage);
 
 // =========================================================
 // DASHBOARD
