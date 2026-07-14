@@ -674,7 +674,9 @@ export const approveBusinessSubscriptionRequest = async (req: any, res: Response
         request.approvedAt = new Date();
         await request.save();
 
-        const plan = request.planType || request.plan || 'free';
+        const rawPlan = request.planType || request.plan || 'free';
+        const plan: 'free' | 'monthly' | 'yearly' =
+            rawPlan === 'monthly' || rawPlan === 'yearly' ? rawPlan : 'free';
 
         if (request.businessId) {
             const business = await Business.findById(request.businessId);
