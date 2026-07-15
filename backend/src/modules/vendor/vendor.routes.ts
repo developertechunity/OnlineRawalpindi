@@ -2,7 +2,7 @@
 
 import express from 'express';
 import { protect } from '../auth/auth.middleware.js';
-import { upload } from '../../lib/multer';
+import { upload } from '../../lib/multer.js';
 import {
     getVendorDashboardData,
     getProducts,

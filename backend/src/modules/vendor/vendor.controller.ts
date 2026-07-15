@@ -1,7 +1,7 @@
 // backend/src/modules/vendor/vendor.controller.ts
 
 import { Request, Response } from 'express';
-import { uploadToCloudinary, deleteFromCloudinary } from '../../lib/cloudinary';
+import { uploadToCloudinary, deleteFromCloudinary } from '../../lib/cloudinary.js';
 import User from '../auth/User.model.js';
 import Product from './Product.model.js';
 import Employee from './Employee.model.js';
@@ -287,7 +287,7 @@ export const addProduct = async (req: any, res: Response): Promise<any> => {
         const uploadedImages = await Promise.all(
             files.map(file => uploadToCloudinary(file.buffer, 'digital-rawalpindi/products'))
         );
-        const imagePaths: string[] = uploadedImages.map(img => img.url);
+        const imagePaths: string[] = uploadedImages.map((img: string) => img.url);
 
         const newProduct = await Product.create({
             vendorId,
